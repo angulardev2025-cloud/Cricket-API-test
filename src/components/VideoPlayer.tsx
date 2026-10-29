@@ -16,7 +16,8 @@ import {
   ChevronRight,
   ChevronLeft,
   Sparkles,
-  ExternalLink
+  ExternalLink,
+  Tv
 } from 'lucide-react';
 
 interface VideoPlayerProps {
@@ -38,6 +39,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const hlsRef = useRef<Hls | null>(null);
 
+  const [isStreamLoaded, setIsStreamLoaded] = useState<boolean>(false);
   const [status, setStatus] = useState<PlaybackStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [activeStreamIndex, setActiveStreamIndex] = useState<number>(0);
@@ -51,10 +53,15 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   const currentStream: ChannelStream | undefined = channel?.streams[activeStreamIndex];
 
-  // Reset stream index when channel changes
+  // Reset stream loaded state when channel changes
   useEffect(() => {
     setActiveStreamIndex(0);
     setErrorMessage(null);
+    setIsStreamLoaded(false); // Do not autoplay on channel change / navigation
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
   }, [channel?.id]);
 
   // Load and play HLS stream
@@ -65,13 +72,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setStatus('loading');
     setErrorMessage(null);
 
-    // Destroy previous HLS instance if any
     if (hlsRef.current) {
       hlsRef.current.destroy();
       hlsRef.current = null;
     }
 
-    // Try HLS.js first
     if (Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
@@ -90,7 +95,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         setStatus('playing');
         video.play().catch(() => {
-          // Autoplay policy may require user interaction or mute
           video.muted = true;
           setIsMuted(true);
           video.play().catch(() => {
@@ -103,7 +107,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         if (data.fatal) {
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
-              setErrorMessage('Network / CORS error loading stream. The broadcaster may restrict web playback or require specific headers.');
+              setErrorMessage('Network / CORS error loading stream. Try switching stream sources.');
               hls.startLoad();
               break;
             case Hls.ErrorTypes.MEDIA_ERROR:
@@ -119,7 +123,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         }
       });
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      // Native Safari/iOS support
       video.src = streamUrl;
       video.addEventListener('loadedmetadata', () => {
         video.play().catch(() => {
@@ -141,7 +144,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   }, []);
 
   useEffect(() => {
-    if (currentStream?.url) {
+    if (isStreamLoaded && currentStream?.url) {
       loadStream(currentStream.url);
     }
 
@@ -151,7 +154,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         hlsRef.current = null;
       }
     };
-  }, [currentStream?.url, loadStream]);
+  }, [isStreamLoaded, currentStream?.url, loadStream]);
 
   // Video event listeners
   useEffect(() => {
@@ -258,9 +261,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       } else if (document.pictureInPictureEnabled) {
         await video.requestPictureInPicture();
       }
-    } catch {
-      // PiP not supported or blocked
-    }
+    } catch {}
   };
 
   const handleMouseMove = () => {
@@ -287,6 +288,34 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         isFullscreen ? 'h-screen w-screen rounded-none' : 'aspect-video max-h-[70vh]'
       }`}
     >
+      {/* Click-to-Load Poster Overlay */}
+      {!isStreamLoaded && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/92 backdrop-blur-md z-30 p-6 text-center">
+          <div
+            onClick={() => setIsStreamLoaded(true)}
+            className="h-20 w-20 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center mb-4 shadow-2xl hover:scale-110 transition-transform cursor-pointer group/btn"
+          >
+            <Play className="h-8 w-8 fill-current ml-1 text-amber-400 group-hover/btn:text-amber-300" />
+          </div>
+          <div className="flex items-center gap-2 mb-1">
+            <Tv className="h-4 w-4 text-amber-500" />
+            <h3 className="text-lg sm:text-xl font-extrabold text-white">
+              {channel?.name || 'Select a Channel'}
+            </h3>
+          </div>
+          <p className="text-xs text-slate-400 mb-6">
+            {channel?.language} • {channel?.category} {currentStream?.resolution ? `• ${currentStream.resolution}` : ''}
+          </p>
+          <button
+            onClick={() => setIsStreamLoaded(true)}
+            className="px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm shadow-xl transition-transform hover:scale-105 flex items-center gap-2"
+          >
+            <Play className="h-4 w-4 fill-current" />
+            <span>Click to Load & Play Stream</span>
+          </button>
+        </div>
+      )}
+
       {/* Video Element */}
       <video
         ref={videoRef}
@@ -316,12 +345,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               </span>
             )}
           </div>
-
-          {channel && (
-            <span className="hidden sm:inline-block text-xs font-medium bg-slate-800/80 text-slate-300 px-3 py-1 rounded-full border border-slate-700">
-              {channel.language} • {channel.category}
-            </span>
-          )}
         </div>
 
         {/* Favorite & Quick Switcher */}
@@ -357,7 +380,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       </div>
 
       {/* Buffering Spinner */}
-      {status === 'loading' || status === 'buffering' ? (
+      {isStreamLoaded && (status === 'loading' || status === 'buffering') ? (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px] pointer-events-none z-10">
           <div className="h-12 w-12 rounded-full border-4 border-amber-500 border-t-transparent animate-spin mb-3"></div>
           <span className="text-sm font-medium text-slate-200 tracking-wider">
@@ -367,7 +390,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       ) : null}
 
       {/* Error & Stream Fallback Panel */}
-      {status === 'error' || errorMessage ? (
+      {isStreamLoaded && (status === 'error' || errorMessage) ? (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/85 backdrop-blur-md p-6 text-center z-15">
           <AlertTriangle className="h-12 w-12 text-amber-500 mb-3" />
           <h4 className="text-lg font-bold text-white mb-2">Stream Playback Warning</h4>
@@ -379,7 +402,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             {channel && channel.streams.length > 1 && (
               <button
                 onClick={handleNextStreamOption}
-                className="btn-gradient-success bg-amber-500 hover:bg-amber-400 text-black font-bold px-4 py-2 rounded-xl text-sm flex items-center gap-2 shadow-lg transition-transform hover:scale-105"
+                className="bg-amber-500 hover:bg-amber-400 text-black font-bold px-4 py-2 rounded-xl text-sm flex items-center gap-2 shadow-lg transition-transform hover:scale-105"
               >
                 <Layers className="h-4 w-4" />
                 <span>
@@ -412,7 +435,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       ) : null}
 
       {/* Alternate Stream Switcher Floating Button if multiple streams exist */}
-      {channel && channel.streams.length > 1 && !errorMessage && (
+      {channel && channel.streams.length > 1 && isStreamLoaded && !errorMessage && (
         <div className="absolute top-20 right-4 z-20">
           <button
             onClick={handleNextStreamOption}
@@ -465,7 +488,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
         {/* Video Settings & Fullscreen */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Aspect Ratio Switcher */}
           <button
             onClick={() => {
               const nextRatio = aspectRatio === 'contain' ? 'cover' : aspectRatio === 'cover' ? 'fill' : 'contain';
@@ -477,7 +499,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             {aspectRatio}
           </button>
 
-          {/* Picture in Picture */}
           <button
             onClick={togglePiP}
             className="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-all"
@@ -486,7 +507,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             <PictureInPicture2 className="h-4 w-4" />
           </button>
 
-          {/* Fullscreen */}
           <button
             onClick={toggleFullscreen}
             className="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-all"

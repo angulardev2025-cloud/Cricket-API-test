@@ -67,9 +67,6 @@ export const PinLock: React.FC<PinLockProps> = ({ onSuccess }) => {
           <p className="text-xs sm:text-sm text-slate-400">
             Please enter the 6-digit security PIN to access the Global IPTV Player.
           </p>
-          <p className="text-xs text-amber-400/80 font-mono mt-1 bg-amber-950/30 py-1 px-2 rounded-lg inline-block border border-amber-800/30">
-            Hint: PIN is 999999
-          </p>
         </div>
 
         <div className="flex justify-center gap-2 sm:gap-3 mb-6">
