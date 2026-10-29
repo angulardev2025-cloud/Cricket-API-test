@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import rawCountriesList from './data/countriesList.json';
 import defaultIndiaData from './data/channels.json';
+import { GLOBAL_POPULAR_CODES } from './constants';
 import { Channel, CountryInfo, CountryData } from './types/iptv';
 import { Header } from './components/Header';
 import { VideoPlayer } from './components/VideoPlayer';
@@ -8,15 +9,17 @@ import { CategoryFilter } from './components/CategoryFilter';
 import { ChannelCard } from './components/ChannelCard';
 import { PlaylistModal } from './components/PlaylistModal';
 import { CountryModal } from './components/CountryModal';
+import { Dashboard } from './components/Dashboard';
 import {
   Tv,
   Flame,
   Radio,
   History,
   Sparkles,
+  Loader2,
+  ArrowLeft,
   ChevronDown,
-  Globe,
-  Loader2
+  Globe
 } from 'lucide-react';
 
 const countriesList = rawCountriesList as CountryInfo[];
@@ -26,9 +29,9 @@ const countryCache = new Map<string, Channel[]>();
 // Preload India into cache
 countryCache.set('in', defaultIndiaData as Channel[]);
 
-const POPULAR_COUNTRY_CODES = ['in', 'us', 'uk', 'ca', 'au', 'de', 'fr', 'es', 'it', 'br', 'ae', 'pk', 'bd'];
-
 export const App: React.FC = () => {
+  const [view, setView] = useState<'dashboard' | 'player'>('dashboard');
+
   // Selected country code
   const [selectedCountryCode, setSelectedCountryCode] = useState<string>(() => {
     try {
@@ -127,7 +130,6 @@ export const App: React.FC = () => {
         setChannels(data.channels);
         setActiveChannel(data.channels[0] || null);
       } else {
-        // Fallback to initial data if unavailable
         setChannels(defaultIndiaData as Channel[]);
         setActiveChannel((defaultIndiaData as Channel[])[0] || null);
       }
@@ -145,9 +147,9 @@ export const App: React.FC = () => {
   }, []);
 
   const handleSelectCountry = (code: string) => {
-    if (code === selectedCountryCode) return;
     setSelectedCountryCode(code);
     loadCountryChannels(code);
+    setView('player');
   };
 
   // Sync favorites
@@ -279,6 +281,10 @@ export const App: React.FC = () => {
 
   const displayedChannels = filteredChannels.slice(0, visibleCount);
 
+  if (view === 'dashboard') {
+    return <Dashboard countries={countriesList} onSelectCountry={handleSelectCountry} />;
+  }
+
   return (
     <div className="min-h-screen bg-[#07090e] text-slate-100 flex flex-col font-sans">
       <Header
@@ -294,6 +300,15 @@ export const App: React.FC = () => {
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        {/* Back to Home Button */}
+        <button
+          onClick={() => setView('dashboard')}
+          className="flex items-center gap-2 text-sm font-semibold text-amber-400 hover:text-white transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span>Back to Country Dashboard</span>
+        </button>
+
         {/* Popular Country Quick Pills */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none no-scrollbar">
           <span className="text-xs font-semibold text-slate-400 shrink-0 flex items-center gap-1.5 mr-1">
@@ -301,7 +316,7 @@ export const App: React.FC = () => {
             <span>Country:</span>
           </span>
 
-          {POPULAR_COUNTRY_CODES.map((code) => {
+          {GLOBAL_POPULAR_CODES.map((code) => {
             const countryItem = countriesList.find((c) => c.code === code);
             if (!countryItem) return null;
             const isSelected = countryItem.code === selectedCountryCode;
@@ -604,36 +619,6 @@ export const App: React.FC = () => {
         onClose={() => setIsPlaylistModalOpen(false)}
         currentCountry={currentCountry}
       />
-
-      {/* Global Footer */}
-      <footer className="mt-20 border-t border-slate-900 bg-slate-950 py-8 text-center text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© Global IPTV Player • Powered by public streams from iptv-org/iptv</p>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setIsCountryModalOpen(true)}
-              className="text-amber-400 hover:underline flex items-center gap-1"
-            >
-              <Globe className="h-3.5 w-3.5" />
-              <span>182 Countries</span>
-            </button>
-            <button
-              onClick={() => setIsPlaylistModalOpen(true)}
-              className="text-amber-400 hover:underline"
-            >
-              M3U Stream Info
-            </button>
-            <a
-              href="https://github.com/iptv-org/iptv"
-              target="_blank"
-              rel="noreferrer"
-              className="text-slate-400 hover:text-white"
-            >
-              iptv-org GitHub
-            </a>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };
