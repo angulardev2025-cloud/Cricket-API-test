@@ -90,7 +90,7 @@ export const PinLock: React.FC<PinLockProps> = ({ onSuccess }) => {
         {error && (
           <div className="flex items-center justify-center gap-2 text-red-400 text-xs font-semibold mb-6 bg-red-950/30 p-2.5 rounded-xl border border-red-900/50">
             <AlertCircle className="h-4 w-4 shrink-0" />
-            <span>Incorrect PIN. Please try again. (999999)</span>
+            <span>Incorrect PIN. Please try again.</span>
           </div>
         )}
 

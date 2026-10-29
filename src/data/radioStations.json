@@ -1,0 +1,219 @@
+{
+  "stations": [
+    {
+      "name": "Hungama Bollywood Dil Se",
+      "language": "Hindi",
+      "streamURL": "https://stream.zeno.fm/143d7gty24zuv",
+      "website": "https://onlineradiobox.com/in/hungamabollywooddilse/",
+      "desc": "Romantic Bollywood tracks and evergreen hits",
+      "logo": "assets/radio.png"
+    },
+    {
+      "name": "Radio Test",
+      "language": "English",
+      "streamURL": "https://eu8.fastcast4u.com/proxy/clyedupq?mp=%2F1?aw_0_req_lsid=2c0fae177108c9a42a7cf24878625444",
+      "website": "https://radioparadise.com/",
+      "desc": "music",
+      "logo": "assets/radio.png"
+    },
+    {
+      "name": "Radio City Hindi",
+      "language": "Hindi",
+      "streamURL": "https://stream.zeno.fm/pxc55r5uyc9uv",
+      "website": "http://radiocity.in/",
+      "desc": "Bollywood music and Hindi entertainment",
+      "logo": "assets/radio.png"
+    },
+    {
+      "name": "Bollywood Gaane Purane",
+      "language": "Hindi",
+      "streamURL": "https://stream.zeno.fm/6n6ewddtad0uv",
+      "website": "https://gaanepurane.my-free.website/",
+      "logo": "assets/radio.png"
+    },
+    {
+      "name": "Radio Mirchi Hindi",
+      "language": "Hindi",
+      "streamURL": "https://eu8.fastcast4u.com/proxy/clyedupq?mp=%2F1?aw_0_req_lsid=2c0fae177108c9a42a7cf24878625444",
+      "website": "https://onlineradiohub.com/wp-content/uploads/2023/05/radio-mirchi-hindi-fm.jpg",
+      "desc": "Hindi",
+      "logo": "assets/radio.png"
+    },
+    {
+      "name": "Red FM 93.5",
+      "language": "Hindi",
+      "streamURL": "https://stream.zeno.fm/9phrkb1e3v8uv",
+      "website": "https://www.redfmindia.in/delhi",
+      "desc": "Delhi",
+      "logo": "assets/radio.png"
+    },
+    {
+      "name": "RADIO BOLLYWOOD 90s",
+      "language": "Hindi",
+      "streamURL": "https://stream.zeno.fm/rm4i9pdex3cuv",
+      "website": "https://www.radioindia.in/radio-retro-bollywood-90s",
+      "desc": "Hindi",
+      "logo": "assets/radio.png"
+    },
+    {
+      "name": "latamangeshkarradio",
+      "language": "Hindi",
+      "streamURL": "https://stream.zeno.fm/87xam8pf7tzuv",
+      "website": "https://radiosindia.com/images/latamangeshkarradio.jpg",
+      "desc": "Hindi",
+      "logo": "assets/radio.png"
+    },
+    {
+      "name": "Hindi Gold Radio",
+      "language": "Hindi",
+      "streamURL": "https://azuracast.vibesounds.in:8010/radio.mp3",
+      "website": "https://onlineradiohub.com/wp-content/uploads/2023/07/hindi-gold-radio.jpg",
+      "desc": "Hindi",
+      "logo": "assets/radio.png"
+    },
+    {
+      "name": "90sonceagainradio",
+      "language": "Hindi",
+      "streamURL": "https://stream.zeno.fm/rm4i9pdex3cuv",
+      "website": "https://radiosindia.com/images/90sonceagainradio.jpg",
+      "desc": "Hindi",
+      "logo": "assets/radio.png"
+    },
+    {
+      "name": "kishorekumarradio",
+      "language": "Hindi",
+      "streamURL": "https://stream.zeno.fm/0ghtfp8ztm0uv",
+      "website": "https://radiosindia.com/images/kishorekumarradio.jpg",
+      "desc": "Hindi",
+      "logo": "assets/radio.png"
+    },
+    {
+      "name": "Indian Bollywood Music",
+      "language": "Hindi",
+      "streamURL": "https://stream.zeno.fm/tn4spkm3dy8uv",
+      "website": "https://zeno.fm/radio/Hindi-Bollywood/",
+      "desc": "Bollywood Lover's Music Station",
+      "logo": "assets/radio.png"
+    },
+    {
+      "name": "92.7 big fm",
+      "language": "Hindi",
+      "streamURL": "https://stream.zeno.fm/dbstwo3dvhhtv",
+      "website": "https://www.bigfmindia.com/",
+      "desc": "Popular Bollywood music and talk shows",
+      "logo": "assets/radio.png"
+    },
+    {
+      "name": "ARIJITH",
+      "language": "Hindi",
+      "streamURL": "https://2.mystreaming.net/uber/bollywoodaruitsingh/icecast.audio",
+      "website": "https://2.mystreaming.net/uber/bollywoodaruitsingh/icecast.audio",
+      "desc": "ARIJITH",
+      "logo": "assets/download.jpg"
+    },
+    {
+      "name": "kumar sanu",
+      "language": "Hindi",
+      "streamURL": "https://stream.zeno.fm/shxt7qxapy8uv",
+      "website": "https://stream.zeno.fm/shxt7qxapy8uv",
+      "desc": "kumar",
+      "logo": "assets/download.webp"
+    },
+    {
+      "name": "HIMESH",
+      "language": "Hindi",
+      "streamURL": "https://stream.zeno.fm/wg53ebxp8hhvv",
+      "website": "https://stream.zeno.fm/wg53ebxp8hhvv",
+      "desc": "HIMESH",
+      "logo": "assets/hr.webp"
+    },
+    {
+      "name": "90 Radio",
+      "language": "hindi",
+      "streamURL": "https://nl4.mystreaming.net/uber/bollywood1990s/icecast.audio",
+      "website": "https://nl4.mystreaming.net/uber/bollywood1990s/icecast.audio",
+      "desc": "hindi",
+      "logo": "assets/90.jpg"
+    },
+    {
+      "name": "SONU NIGAM",
+      "language": "hindi",
+      "streamURL": "https://2.mystreaming.net/uber/bollywoodsonunigam/icecast.audio",
+      "website": "https://2.mystreaming.net/uber/bollywoodsonunigam/icecast.audio",
+      "desc": "hindi",
+      "logo": "assets/sonu.jpg"
+    },
+    {
+      "name": "Hits of Sonu Nigam",
+      "language": "Kannada",
+      "streamURL": "https://www.dropbox.com/scl/fi/d0wi2waes6h0d3msxmrvu/Hits-Of-Sonu-Nigam-Kannada-Songs-Audio-Jukebox-_-Selected-From-Popular-Movies-MP3_320K.mp3?rlkey=pi6z4tl5akgb2sgke3361zbsp&st=mltkexzd&dl=1",
+      "website": "",
+      "desc": "A collection of popular Sonu Nigam songs in Kannada.",
+      "logo": "assets/sonu.jpg"
+    },
+    {
+      "name": "Sonu Nigam Top 50",
+      "language": "Kannada",
+      "streamURL": "https://www.dropbox.com/scl/fi/3oskj3niecc98jezktsdk/Sonu-Nigam-Top-50-Songs-Vol-01-__-Kannada-Selected-Songs-Audio-Jukebox-__-Swara-Sangeethotsava-__-MP3_320K.mp3?rlkey=r633jsfp32dvi6uskg5vbbamn&st=zabei9ec&dl=1",
+      "website": "",
+      "desc": "Top 50 Kannada songs by Sonu Nigam.",
+      "logo": "assets/sonu.jpg"
+    },
+    {
+      "name": "Muddagi Neenu",
+      "language": "Kannada",
+      "streamURL": "https://www.dropbox.com/scl/fi/orse8ltoqebd48s3wk3zd/Muddagi-Neenu-Nanna-Koogide-Sonu-Nigam-Solo-Hits-Vol-1-_-Selected-Love-Songs-_-Anand-Audio-Popular-MP3_320K.mp3?rlkey=utlywhu36k66cfz0vb0x5144z&st=s4sose51&dl=1",
+      "website": "",
+      "desc": "Sonu Nigam's solo love songs.",
+      "logo": "assets/sonu.jpg"
+    },
+    {
+      "name": "Kumar Sanu & Alka Yagnik",
+      "language": "Hindi",
+      "streamURL": "https://www.dropbox.com/scl/fi/nl2a66stc2tdt9nsyjc87/Kumar-Sanu-_-Alka-Yagnik-Songs-_-Jab-Se-Hum-Tere-_-Jeeta-Tha-Jiske-Liye-MP3_320K.mp3?rlkey=spj02c87y1xg63y5vd6bfe2iu&st=wi19nl4b&dl=1",
+      "website": "",
+      "desc": "A collection of Kumar Sanu and Alka Yagnik's greatest hits.",
+      "logo": "assets/radio.png"
+    },
+    {
+      "name": "Valentine's Special",
+      "language": "Hindi",
+      "streamURL": "https://www.dropbox.com/scl/fi/pvh2r8emk2xew614r078c/Love-Hits_-Valentine_s-Special-Audio-Jukebox-_-Best-Love-Songs-2024-_-T-Series-MP3_320K.mp3?rlkey=m8njtmz5yy08ry7a28xfzd90u&st=nu9fzs63&dl=1",
+      "website": "",
+      "desc": "A collection of the best love songs for 2024.",
+      "logo": "assets/radio.png"
+    },
+    {
+      "name": "Sonu & Shreya Duets",
+      "language": "Kannada",
+      "streamURL": "https://www.dropbox.com/scl/fi/tz5isib3drgz3cegb236l/Sonu-Nigam-_-Shreya-Ghoshal-Duets-Vol-01-_-Kannada-Selected-Love-Songs-Audio-Jukebox-2018-_-Kannada-MP3_320K.mp3?rlkey=qto8d0r1is8fad8blf8mlmwhv&st=rh8gpex0&dl=1",
+      "website": "",
+      "desc": "A collection of love songs by Sonu Nigam and Shreya Ghoshal.",
+      "logo": "assets/sonu.jpg"
+    },
+    {
+      "name": "Rani Mukherjee 90s Hits",
+      "language": "Hindi",
+      "streamURL": "https://www.dropbox.com/scl/fi/ggm6nbeiqmctlk9t24bvg/Rani-Mukherjee-90_s-Hit-Songs-Video-Jukebox-_-Bollywood-Romantic-Love-Songs-_-Teri-Chunaria-MP3_320K.mp3?rlkey=ns9y71nvj8qmhobtz3428yiu7&st=oqr8b5sy&dl=1",
+      "website": "",
+      "desc": "A collection of Rani Mukherjee's greatest hits from the 90s.",
+      "logo": "assets/radio.png"
+    },
+    {
+      "name": "Voice of Sonu Nigam",
+      "language": "Kannada",
+      "streamURL": "https://www.dropbox.com/scl/fi/wii0ztcuyh7txg7dlgjz1/Sonu-Nigam-Kannada-Songs-_-Voice-Of-Sonu-Nigam-_-JukeBox-Vol-01-_-Sonu-Nigam-Kannada-Super-Hits-2017-MP3_320K.mp3?rlkey=ramrq2iredrowr97k3f34rjtf&st=tn327uew&dl=1",
+      "website": "",
+      "desc": "A collection of Sonu Nigam's super hits in Kannada.",
+      "logo": "assets/sonu.jpg"
+    },
+    {
+      "name": "Kundapura",
+      "logo": "assets/radio.png",
+      "streamURL": "https://d9unqqphyis97.cloudfront.net/kundapura.m3u8",
+      "next": "assamase",
+      "previous": "tamil",
+      "page": "/channel-vividh-bharati/"
+    }
+  ]
+}

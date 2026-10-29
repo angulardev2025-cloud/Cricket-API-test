@@ -1,14 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { CountryInfo } from '../types/iptv';
-import { Search, Tv, ArrowRight, Globe, Loader2, Play, Layout, LayoutTemplate } from 'lucide-react';
+import { Search, Tv, ArrowRight, Globe, Loader2, Play } from 'lucide-react';
 import searchIndexData from '../data/searchIndex.json';
 
 interface DashboardProps {
   countries: CountryInfo[];
   onSelectCountry: (code: string) => void;
   onSelectChannel: (code: string, channelId: string) => void;
-  viewMode: 'normal' | 'simple';
-  onToggleViewMode: () => void;
 }
 
 interface SearchResult {
@@ -23,9 +21,7 @@ const typedSearchIndex = searchIndexData as SearchResult[];
 export const Dashboard: React.FC<DashboardProps> = ({ 
   countries, 
   onSelectCountry, 
-  onSelectChannel,
-  viewMode,
-  onToggleViewMode
+  onSelectChannel
 }) => {
   const [search, setSearch] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('All');
@@ -69,17 +65,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   return (
     <div className="min-h-screen bg-[#07090e] p-4 sm:p-6 lg:p-8 text-slate-100 flex flex-col">
       <div className="max-w-7xl mx-auto w-full flex-1">
-        {/* Layout Switcher Mini */}
-        <div className="flex justify-end mb-4">
-           <button 
-             onClick={onToggleViewMode}
-             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-red-600 transition-all text-xs font-bold text-slate-400 hover:text-white"
-           >
-              {viewMode === 'normal' ? <LayoutTemplate className="h-4 w-4" /> : <Layout className="h-4 w-4" />}
-              <span>Switch to Simple View</span>
-           </button>
-        </div>
-
         {/* Hero Header */}
         <header className="mb-8 sm:mb-12 text-center pt-2 sm:pt-6 relative z-50">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold mb-4">

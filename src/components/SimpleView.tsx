@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Channel } from '../types/iptv';
 import { VideoPlayer } from './VideoPlayer';
-import { Search, Loader2, Play, Tv, Sparkles, History, Radio, X } from 'lucide-react';
-import searchIndexData from '../data/searchIndex.json';
+import { Tv, Sparkles, History, Radio, Play } from 'lucide-react';
 
 interface SimpleViewProps {
   currentChannel: Channel | null;
@@ -11,108 +10,20 @@ interface SimpleViewProps {
   onToggleFavorite: (channel: Channel) => void;
   recents: string[];
   suggestedChannels: Channel[];
+  currentCountryCode: string;
 }
-
-interface SearchResult {
-  n: string; // name
-  c: string; // country code
-  i: string; // id
-  f: string; // flag
-}
-
-const typedSearchIndex = searchIndexData as SearchResult[];
 
 export const SimpleView: React.FC<SimpleViewProps> = ({
   currentChannel,
   onSelectChannel,
   favorites,
   onToggleFavorite,
-  suggestedChannels
+  suggestedChannels,
+  currentCountryCode
 }) => {
-  const [search, setSearch] = useState('');
-  const [suggestions, setSuggestions] = useState<SearchResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-
-  useEffect(() => {
-    const q = search.toLowerCase().trim();
-    if (q.length >= 2) {
-      setIsSearching(true);
-      const results = typedSearchIndex
-        .filter(item => item.n.toLowerCase().includes(q))
-        .slice(0, 12);
-      setSuggestions(results);
-      setIsSearching(false);
-    } else {
-      setSuggestions([]);
-    }
-  }, [search]);
-
-  const handleClearSearch = () => {
-    setSearch('');
-    setSuggestions([]);
-  };
 
   return (
     <div className="min-h-screen bg-[#07090e] text-slate-100 flex flex-col p-4 sm:p-6 space-y-6">
-      {/* Top Search Bar */}
-      <div className="max-w-4xl mx-auto w-full relative z-[70]">
-        <div className="relative group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500 group-focus-within:text-red-500 transition-colors" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search 14,500+ channels instantly..."
-            className="w-full bg-slate-900/80 backdrop-blur-xl text-white rounded-2xl py-4 pl-12 pr-12 border border-slate-800 focus:ring-2 focus:ring-red-600 focus:border-transparent focus:outline-none shadow-2xl transition-all text-sm sm:text-base"
-          />
-          {search && (
-            <button 
-              onClick={handleClearSearch}
-              className="absolute right-12 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white p-1"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-          {isSearching && (
-            <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-red-500 animate-spin" />
-          )}
-        </div>
-
-        {/* Global Search Suggestions Overlay */}
-        {suggestions.length > 0 && (
-          <div className="absolute top-full left-0 right-0 mt-3 bg-slate-900 border border-slate-800 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden animate-in fade-in slide-in-from-top-2 overflow-y-auto max-h-[450px]">
-            <div className="p-3 border-b border-slate-800 bg-slate-950/50 flex items-center justify-between">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-2">Top Suggestions</span>
-              <span className="text-[10px] text-red-500 font-bold px-2">{suggestions.length} Channels found</span>
-            </div>
-            {suggestions.map((item, idx) => (
-              <button
-                key={`${item.i}-${idx}`}
-                onClick={() => {
-                  onSelectChannel(item.c, item.i);
-                  handleClearSearch();
-                }}
-                className="w-full flex items-center justify-between p-4 hover:bg-red-600/10 transition-all group text-left border-b border-slate-800/50 last:border-0"
-              >
-                <div className="flex items-center gap-4 min-w-0">
-                  <div className="h-10 w-10 rounded-xl bg-slate-800 flex items-center justify-center text-xs font-bold text-red-500 shrink-0 group-hover:bg-red-600 group-hover:text-white transition-colors border border-slate-700">
-                    {item.n.slice(0, 2).toUpperCase()}
-                  </div>
-                  <div className="truncate">
-                    <p className="text-sm font-bold text-white group-hover:text-red-500 transition-colors">{item.n}</p>
-                    <p className="text-[10px] text-slate-500 flex items-center gap-1.5 mt-0.5">
-                      <span className="text-base">{item.f}</span>
-                      <span className="font-semibold">{item.c.toUpperCase()}</span>
-                    </p>
-                  </div>
-                </div>
-                <Play className="h-4 w-4 text-red-600 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0" />
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
       {/* Video Player Section */}
       <div className="max-w-5xl mx-auto w-full">
         {currentChannel ? (
@@ -163,7 +74,7 @@ export const SimpleView: React.FC<SimpleViewProps> = ({
               {suggestedChannels.filter(c => favorites.includes(c.id)).map((ch) => (
                 <button
                   key={ch.id}
-                  onClick={() => onSelectChannel('in', ch.id)}
+                  onClick={() => onSelectChannel(currentCountryCode, ch.id)}
                   className="flex-shrink-0 w-36 sm:w-44 group space-y-2"
                 >
                   <div className="aspect-video rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center group-hover:border-red-600 transition-all relative overflow-hidden shadow-lg">
@@ -192,7 +103,7 @@ export const SimpleView: React.FC<SimpleViewProps> = ({
              {suggestedChannels.slice(0, 12).map(ch => (
                 <button
                   key={ch.id}
-                  onClick={() => onSelectChannel('in', ch.id)}
+                  onClick={() => onSelectChannel(currentCountryCode, ch.id)}
                   className="flex items-start gap-3 p-3 rounded-2xl hover:bg-slate-900 transition-all group text-left border border-transparent hover:border-slate-800"
                 >
                    <div className="w-24 h-16 sm:w-28 sm:h-16 rounded-xl bg-slate-950 border border-slate-800 flex-shrink-0 flex items-center justify-center group-hover:border-red-600/50 overflow-hidden relative shadow-md">
