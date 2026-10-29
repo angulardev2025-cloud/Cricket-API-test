@@ -11,6 +11,7 @@ interface SimpleViewProps {
   recents: string[];
   suggestedChannels: Channel[];
   currentCountryCode: string;
+  onBack: () => void;
 }
 
 export const SimpleView: React.FC<SimpleViewProps> = ({
@@ -19,11 +20,23 @@ export const SimpleView: React.FC<SimpleViewProps> = ({
   favorites,
   onToggleFavorite,
   suggestedChannels,
-  currentCountryCode
+  currentCountryCode,
+  onBack
 }) => {
 
   return (
     <div className="min-h-screen bg-[#07090e] text-slate-100 flex flex-col p-4 sm:p-6 space-y-6">
+      {/* Back to Home Button (Requested) */}
+      <div className="max-w-5xl mx-auto w-full flex justify-start">
+         <button 
+           onClick={onBack}
+           className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-amber-500 transition-all uppercase tracking-widest bg-slate-900/50 px-4 py-2 rounded-xl border border-slate-800 hover:border-amber-500/50"
+         >
+            <History className="h-4 w-4" />
+            <span>Back to Dashboard</span>
+         </button>
+      </div>
+
       {/* Video Player Section */}
       <div className="max-w-5xl mx-auto w-full">
         {currentChannel ? (

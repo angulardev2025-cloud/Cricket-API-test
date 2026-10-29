@@ -193,7 +193,7 @@ export const App: React.FC = () => {
     setSelectedCountryCode(code);
     loadCountryChannels(code, channelId);
     setView('player');
-    setViewMode('normal'); // Ensure we switch to player view in normal mode if coming from simple search
+    setViewMode('simple'); // Switch to simple view for a "new page" player experience
   };
 
   // Sync favorites
@@ -364,9 +364,9 @@ export const App: React.FC = () => {
             
             {view === 'dashboard' && (
               <Dashboard 
-                countries={countriesList} 
-                onSelectCountry={handleSelectCountry} 
                 onSelectChannel={handleSelectGlobalChannel}
+                onSelectCountry={handleSelectCountry}
+                onOpenCountryModal={() => setIsCountryModalOpen(true)}
               />
             )}
 
@@ -379,6 +379,7 @@ export const App: React.FC = () => {
                 recents={recents}
                 suggestedChannels={channels}
                 currentCountryCode={selectedCountryCode}
+                onBack={() => setView('dashboard')}
               />
             )}
 

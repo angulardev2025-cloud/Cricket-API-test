@@ -43,6 +43,21 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [suggestions, setSuggestions] = React.useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = React.useState(false);
+  const [time, setTime] = React.useState(new Date());
+
+  React.useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('en-US', {
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  };
 
   React.useEffect(() => {
     const q = searchQuery.toLowerCase().trim();
@@ -65,7 +80,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-slate-950/85 backdrop-blur-md border-b border-slate-800/80 px-4 sm:px-6 lg:px-8 py-3.5">
+    <header className="sticky top-0 z-[100] bg-slate-950/85 backdrop-blur-md border-b border-slate-800/80 px-4 sm:px-6 lg:px-8 py-3.5 shadow-xl">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
         {/* Brand & Country Selector */}
         <div className="flex items-center justify-between w-full md:w-auto gap-4">
@@ -89,6 +104,11 @@ export const Header: React.FC<HeaderProps> = ({
                 182 Countries • 20,000+ Streams
               </p>
             </div>
+          </div>
+
+          {/* Professional Digital Clock */}
+          <div className="flex items-center px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-slate-900/50 border border-slate-800 font-mono text-[10px] sm:text-xs font-bold text-amber-500 shadow-inner tracking-widest shrink-0">
+             <span className="min-w-[65px] sm:min-w-[72px] text-center">{formatTime(time)}</span>
           </div>
 
           {/* Country Switcher Button */}
