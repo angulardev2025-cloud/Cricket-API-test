@@ -11,12 +11,10 @@ import {
   RotateCcw,
   AlertTriangle,
   Radio,
-  Layers,
-  PictureInPicture2,
+  Settings,
   ChevronRight,
   ChevronLeft,
   Sparkles,
-  ExternalLink,
   Tv
 } from 'lucide-react';
 
@@ -47,24 +45,22 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [volume, setVolume] = useState<number>(1);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
-  const [aspectRatio, setAspectRatio] = useState<'contain' | 'cover' | 'fill'>('contain');
   const [showControls, setShowControls] = useState<boolean>(true);
+  const [showSettings, setShowSettings] = useState<boolean>(false);
   const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentStream: ChannelStream | undefined = channel?.streams[activeStreamIndex];
 
-  // Reset stream loaded state when channel changes
   useEffect(() => {
     setActiveStreamIndex(0);
     setErrorMessage(null);
-    setIsStreamLoaded(false); // Do not autoplay on channel change / navigation
+    setIsStreamLoaded(false);
     if (hlsRef.current) {
       hlsRef.current.destroy();
       hlsRef.current = null;
     }
   }, [channel?.id]);
 
-  // Load and play HLS stream
   const loadStream = useCallback((streamUrl: string) => {
     const video = videoRef.current;
     if (!video || !streamUrl) return;
@@ -81,11 +77,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: true,
-        backBufferLength: 60,
-        manifestLoadingTimeOut: 12000,
-        manifestLoadingMaxRetry: 2,
-        levelLoadingTimeOut: 12000,
-        levelLoadingMaxRetry: 2,
       });
 
       hlsRef.current = hls;
@@ -97,9 +88,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         video.play().catch(() => {
           video.muted = true;
           setIsMuted(true);
-          video.play().catch(() => {
-            setIsPlaying(false);
-          });
+          video.play().catch(() => setIsPlaying(false));
         });
       });
 
@@ -107,17 +96,16 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         if (data.fatal) {
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
-              setErrorMessage('Network / CORS error loading stream. Try switching stream sources.');
+              setErrorMessage('Connection error. Try another source.');
               hls.startLoad();
               break;
             case Hls.ErrorTypes.MEDIA_ERROR:
-              setErrorMessage('Media decoding error occurred. Attempting stream recovery...');
               hls.recoverMediaError();
               break;
             default:
-              setErrorMessage(`Stream playback halted: ${data.details}`);
-              hls.destroy();
               setStatus('error');
+              setErrorMessage('Stream unavailable.');
+              hls.destroy();
               break;
           }
         }
@@ -128,18 +116,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         video.play().catch(() => {
           video.muted = true;
           setIsMuted(true);
-          video.play().catch(() => setIsPlaying(false));
+          video.play();
         });
         setStatus('playing');
       });
-
-      video.addEventListener('error', () => {
-        setStatus('error');
-        setErrorMessage('Failed to decode native HLS video stream.');
-      });
-    } else {
-      setStatus('error');
-      setErrorMessage('Your browser does not support HLS video streaming.');
     }
   }, []);
 
@@ -147,16 +127,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     if (isStreamLoaded && currentStream?.url) {
       loadStream(currentStream.url);
     }
-
-    return () => {
-      if (hlsRef.current) {
-        hlsRef.current.destroy();
-        hlsRef.current = null;
-      }
-    };
   }, [isStreamLoaded, currentStream?.url, loadStream]);
 
-  // Video event listeners
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -179,46 +151,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     };
   }, []);
 
-  // Keyboard navigation & controls
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (['input', 'textarea'].includes((e.target as HTMLElement)?.tagName?.toLowerCase())) {
-        return;
-      }
-
-      if (e.code === 'Space') {
-        e.preventDefault();
-        togglePlay();
-      } else if (e.code === 'KeyM') {
-        toggleMute();
-      } else if (e.code === 'KeyF') {
-        toggleFullscreen();
-      } else if (e.code === 'ArrowRight') {
-        e.preventDefault();
-        onNextChannel();
-      } else if (e.code === 'ArrowLeft') {
-        e.preventDefault();
-        onPrevChannel();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  });
-
   const togglePlay = () => {
     const video = videoRef.current;
     if (!video) return;
-
-    if (video.paused) {
-      video.play().catch(() => {
-        video.muted = true;
-        setIsMuted(true);
-        video.play();
-      });
-    } else {
-      video.pause();
-    }
+    if (video.paused) video.play();
+    else video.pause();
   };
 
   const toggleMute = () => {
@@ -228,294 +165,194 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setIsMuted(video.muted);
   };
 
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = parseFloat(e.target.value);
-    const video = videoRef.current;
-    if (!video) return;
-    video.volume = val;
-    setVolume(val);
-    if (val === 0) {
-      video.muted = true;
-      setIsMuted(true);
-    } else if (isMuted) {
-      video.muted = false;
-      setIsMuted(false);
-    }
-  };
-
   const toggleFullscreen = () => {
     if (!containerRef.current) return;
     if (!document.fullscreenElement) {
-      containerRef.current.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => {});
+      containerRef.current.requestFullscreen();
+      setIsFullscreen(true);
     } else {
-      document.exitFullscreen().then(() => setIsFullscreen(false)).catch(() => {});
+      document.exitFullscreen();
+      setIsFullscreen(false);
     }
-  };
-
-  const togglePiP = async () => {
-    const video = videoRef.current;
-    if (!video) return;
-    try {
-      if (document.pictureInPictureElement) {
-        await document.exitPictureInPicture();
-      } else if (document.pictureInPictureEnabled) {
-        await video.requestPictureInPicture();
-      }
-    } catch {}
   };
 
   const handleMouseMove = () => {
     setShowControls(true);
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
     controlsTimeoutRef.current = setTimeout(() => {
-      if (isPlaying) {
-        setShowControls(false);
-      }
-    }, 3500);
-  };
-
-  const handleNextStreamOption = () => {
-    if (!channel || channel.streams.length <= 1) return;
-    const nextIdx = (activeStreamIndex + 1) % channel.streams.length;
-    setActiveStreamIndex(nextIdx);
+      if (isPlaying && !showSettings) setShowControls(false);
+    }, 3000);
   };
 
   return (
     <div
       ref={containerRef}
       onMouseMove={handleMouseMove}
-      className={`relative w-full rounded-2xl overflow-hidden bg-black shadow-2xl border border-slate-800 group select-none ${
-        isFullscreen ? 'h-screen w-screen rounded-none' : 'aspect-video max-h-[70vh]'
+      className={`relative w-full overflow-hidden bg-black group select-none ${
+        isFullscreen ? 'h-screen w-screen' : 'aspect-video rounded-xl border border-slate-800 shadow-2xl'
       }`}
     >
-      {/* Click-to-Load Poster Overlay */}
+      {/* Youtube Style Poster */}
       {!isStreamLoaded && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/92 backdrop-blur-md z-30 p-6 text-center">
-          <div
-            onClick={() => setIsStreamLoaded(true)}
-            className="h-20 w-20 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center mb-4 shadow-2xl hover:scale-110 transition-transform cursor-pointer group/btn"
-          >
-            <Play className="h-8 w-8 fill-current ml-1 text-amber-400 group-hover/btn:text-amber-300" />
+        <div 
+          onClick={() => setIsStreamLoaded(true)}
+          className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900 cursor-pointer z-40 group/poster"
+        >
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/poster:opacity-100 transition-opacity flex items-center justify-center">
+             <div className="w-16 h-16 bg-red-600 rounded-2xl flex items-center justify-center shadow-2xl">
+               <Play className="h-8 w-8 text-white fill-current" />
+             </div>
           </div>
-          <div className="flex items-center gap-2 mb-1">
-            <Tv className="h-4 w-4 text-amber-500" />
-            <h3 className="text-lg sm:text-xl font-extrabold text-white">
-              {channel?.name || 'Select a Channel'}
-            </h3>
-          </div>
-          <p className="text-xs text-slate-400 mb-6">
-            {channel?.language} • {channel?.category} {currentStream?.resolution ? `• ${currentStream.resolution}` : ''}
-          </p>
-          <button
-            onClick={() => setIsStreamLoaded(true)}
-            className="px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm shadow-xl transition-transform hover:scale-105 flex items-center gap-2"
-          >
-            <Play className="h-4 w-4 fill-current" />
-            <span>Click to Load & Play Stream</span>
-          </button>
+          <Tv className="h-16 w-16 text-zinc-800 mb-4" />
+          <h2 className="text-xl font-bold text-zinc-300">{channel?.name}</h2>
+          <p className="text-zinc-500 text-sm mt-1">Click to stream live</p>
         </div>
       )}
 
-      {/* Video Element */}
       <video
         ref={videoRef}
-        className={`w-full h-full object-${aspectRatio} bg-black`}
+        onClick={togglePlay}
+        className="w-full h-full bg-black cursor-pointer"
         playsInline
       />
 
-      {/* Top Overlay Badge Bar */}
+      {/* Simplified Bottom Bar (YouTube Style) */}
       <div
-        className={`absolute top-0 left-0 right-0 p-4 sm:p-6 bg-gradient-to-b from-black/80 via-black/40 to-transparent flex items-center justify-between transition-opacity duration-300 z-20 ${
-          showControls || !isPlaying ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        className={`absolute bottom-0 left-0 right-0 p-2 sm:p-4 bg-gradient-to-t from-black/90 to-transparent transition-opacity duration-300 z-30 ${
+          showControls || !isPlaying ? 'opacity-100' : 'opacity-0'
         }`}
       >
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-red-600/90 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md backdrop-blur-sm">
-            <Radio className="h-3.5 w-3.5 live-dot" />
-            <span>LIVE</span>
-          </div>
-
-          <div className="bg-slate-900/80 backdrop-blur-md px-3.5 py-1 rounded-full border border-slate-700/60 flex items-center gap-2">
-            <span className="font-extrabold text-sm sm:text-base text-white tracking-wide">
-              {channel?.name || 'Select a Channel'}
-            </span>
-            {currentStream?.resolution && (
-              <span className="text-[10px] font-bold uppercase bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded">
-                {currentStream.resolution}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Favorite & Quick Switcher */}
-        {channel && (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onToggleFavorite}
-              className={`p-2 rounded-full border backdrop-blur-md transition-all ${
-                isFavorite
-                  ? 'bg-amber-500 text-black border-amber-400 font-bold'
-                  : 'bg-slate-900/80 text-slate-300 hover:text-white border-slate-700 hover:bg-slate-800'
-              }`}
-              title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-            >
-              <Sparkles className="h-4 w-4" />
-            </button>
-            <button
-              onClick={onPrevChannel}
-              className="p-2 rounded-full bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 backdrop-blur-md transition-all"
-              title="Previous channel (Arrow Left)"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <button
-              onClick={onNextChannel}
-              className="p-2 rounded-full bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 backdrop-blur-md transition-all"
-              title="Next channel (Arrow Right)"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Buffering Spinner */}
-      {isStreamLoaded && (status === 'loading' || status === 'buffering') ? (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px] pointer-events-none z-10">
-          <div className="h-12 w-12 rounded-full border-4 border-amber-500 border-t-transparent animate-spin mb-3"></div>
-          <span className="text-sm font-medium text-slate-200 tracking-wider">
-            Connecting to live broadcast stream...
-          </span>
-        </div>
-      ) : null}
-
-      {/* Error & Stream Fallback Panel */}
-      {isStreamLoaded && (status === 'error' || errorMessage) ? (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/85 backdrop-blur-md p-6 text-center z-15">
-          <AlertTriangle className="h-12 w-12 text-amber-500 mb-3" />
-          <h4 className="text-lg font-bold text-white mb-2">Stream Playback Warning</h4>
-          <p className="text-sm text-slate-300 max-w-md mb-4 leading-relaxed">
-            {errorMessage || 'Unable to play this stream directly in browser.'}
-          </p>
-
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            {channel && channel.streams.length > 1 && (
-              <button
-                onClick={handleNextStreamOption}
-                className="bg-amber-500 hover:bg-amber-400 text-black font-bold px-4 py-2 rounded-xl text-sm flex items-center gap-2 shadow-lg transition-transform hover:scale-105"
+        <div className="flex items-center justify-between gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 overflow-hidden">
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+              <button 
+                onClick={onPrevChannel} 
+                className="text-white/60 hover:text-white transition-colors p-1"
+                title="Previous channel"
               >
-                <Layers className="h-4 w-4" />
-                <span>
-                  Switch to Alternate Stream ({activeStreamIndex + 1}/{channel.streams.length})
+                <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+              </button>
+
+              <button onClick={togglePlay} className="text-white hover:scale-110 transition-transform p-1">
+                {isPlaying ? <Pause className="h-5 w-5 sm:h-6 sm:w-6 fill-current" /> : <Play className="h-5 w-5 sm:h-6 sm:w-6 fill-current" />}
+              </button>
+
+              <button 
+                onClick={onNextChannel} 
+                className="text-white/60 hover:text-white transition-colors p-1"
+                title="Next channel"
+              >
+                <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-1 sm:gap-2 group/vol shrink-0">
+              <button onClick={toggleMute} className="text-white/80 hover:text-white p-1">
+                {isMuted || volume === 0 ? <VolumeX className="h-4 w-4 sm:h-5 sm:w-5" /> : <Volume2 className="h-4 w-4 sm:h-5 sm:w-5" />}
+              </button>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.1"
+                value={isMuted ? 0 : volume}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value);
+                  setVolume(v);
+                  if (videoRef.current) videoRef.current.volume = v;
+                }}
+                className="w-0 group-hover/vol:w-16 sm:group-hover/vol:w-20 transition-all duration-300 h-1 accent-red-600 appearance-none bg-white/30 rounded-full cursor-pointer"
+              />
+              
+              {/* Resolution Badge */}
+              {currentStream?.resolution && (
+                <span className="text-[9px] sm:text-[10px] font-bold bg-white/10 text-white border border-white/20 px-1.5 py-0.5 rounded uppercase shrink-0">
+                  {currentStream.resolution}
                 </span>
+              )}
+            </div>
+            
+            <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+               <span className="text-white text-xs sm:text-sm font-bold truncate max-w-[80px] sm:max-w-[200px]">
+                 {channel?.name}
+               </span>
+               <div className="hidden xs:flex items-center gap-1 text-[8px] sm:text-[10px] bg-red-600 text-white px-1.5 py-0.5 rounded font-bold shrink-0">
+                 <Radio className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                 <span>LIVE</span>
+               </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+            {channel && channel.streams.length > 1 && (
+              <button 
+                onClick={() => setShowSettings(!showSettings)}
+                className={`text-white/80 hover:text-white transition-all p-1 ${showSettings ? 'rotate-45 text-red-500' : ''}`}
+                title="Select Source"
+              >
+                <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
             )}
 
-            <button
-              onClick={() => currentStream?.url && loadStream(currentStream.url)}
-              className="bg-slate-800 hover:bg-slate-700 text-white font-medium px-4 py-2 rounded-xl text-sm flex items-center gap-2 border border-slate-700 transition-all"
+            <button 
+              onClick={onToggleFavorite}
+              className={`transition-all p-1 ${isFavorite ? 'text-amber-400 scale-110' : 'text-white/60 hover:text-white'}`}
+              title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
             >
-              <RotateCcw className="h-4 w-4" />
-              <span>Retry Stream</span>
+              <Sparkles className={`h-4 w-4 sm:h-5 sm:w-5 ${isFavorite ? 'fill-current' : ''}`} />
             </button>
-
-            {currentStream?.url && (
-              <a
-                href={currentStream.url}
-                target="_blank"
-                rel="noreferrer"
-                className="bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white font-medium px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 border border-slate-800"
-              >
-                <span>Direct Link</span>
-                <ExternalLink className="h-3 w-3" />
-              </a>
-            )}
+            
+            <button onClick={toggleFullscreen} className="text-white/80 hover:text-white p-1">
+              {isFullscreen ? <Minimize className="h-4 w-4 sm:h-5 sm:w-5" /> : <Maximize className="h-4 w-4 sm:h-5 sm:w-5" />}
+            </button>
           </div>
         </div>
-      ) : null}
+      </div>
 
-      {/* Alternate Stream Switcher Floating Button if multiple streams exist */}
-      {channel && channel.streams.length > 1 && isStreamLoaded && !errorMessage && (
-        <div className="absolute top-20 right-4 z-20">
-          <button
-            onClick={handleNextStreamOption}
-            className="glass-panel text-xs font-semibold px-3 py-1.5 rounded-lg text-slate-200 hover:text-white border border-slate-700 hover:border-amber-500 flex items-center gap-1.5 shadow-md transition-all"
-            title="Switch stream source / resolution"
-          >
-            <Layers className="h-3.5 w-3.5 text-amber-400" />
-            <span>
-              Source {activeStreamIndex + 1}/{channel.streams.length}
-            </span>
-          </button>
+      {/* Settings Overlay (Source Picker) */}
+      {showSettings && (
+        <div className="absolute bottom-12 sm:bottom-16 right-2 sm:right-4 glass-panel p-2 rounded-xl z-50 border border-white/10 w-40 sm:w-48 shadow-2xl animate-in slide-in-from-bottom-2">
+          <p className="text-[9px] sm:text-[10px] font-bold text-zinc-500 uppercase px-3 py-1">Select Source</p>
+          <div className="space-y-1">
+            {channel?.streams.map((s, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  setActiveStreamIndex(idx);
+                  setShowSettings(false);
+                }}
+                className={`w-full text-left px-3 py-1.5 rounded-lg text-[10px] sm:text-xs transition-colors ${
+                  activeStreamIndex === idx ? 'bg-red-600 text-white font-bold' : 'text-zinc-300 hover:bg-white/10'
+                }`}
+              >
+                Source {idx + 1} {s.resolution ? `(${s.resolution})` : ''}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Bottom Controls Bar */}
-      <div
-        className={`absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-gradient-to-t from-black/90 via-black/50 to-transparent flex items-center justify-between transition-opacity duration-300 z-20 ${
-          showControls || !isPlaying ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
-      >
-        {/* Play/Pause & Volume */}
-        <div className="flex items-center gap-4">
-          <button
-            onClick={togglePlay}
-            className="p-3 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition-transform hover:scale-105 shadow-lg"
-            title={isPlaying ? 'Pause (Space)' : 'Play (Space)'}
-          >
-            {isPlaying ? <Pause className="h-5 w-5 fill-current" /> : <Play className="h-5 w-5 fill-current ml-0.5" />}
-          </button>
-
-          <div className="flex items-center gap-2 group/vol">
-            <button
-              onClick={toggleMute}
-              className="p-2 text-slate-300 hover:text-white transition-colors"
-              title="Mute / Unmute (M)"
-            >
-              {isMuted || volume === 0 ? <VolumeX className="h-5 w-5 text-red-400" /> : <Volume2 className="h-5 w-5" />}
-            </button>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.05"
-              value={isMuted ? 0 : volume}
-              onChange={handleVolumeChange}
-              className="w-16 sm:w-24 h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
-            />
-          </div>
+      {/* Buffering/Loading */}
+      {isStreamLoaded && (status === 'loading' || status === 'buffering') && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/20 z-20">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
         </div>
+      )}
 
-        {/* Video Settings & Fullscreen */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          <button
-            onClick={() => {
-              const nextRatio = aspectRatio === 'contain' ? 'cover' : aspectRatio === 'cover' ? 'fill' : 'contain';
-              setAspectRatio(nextRatio);
-            }}
-            className="text-xs font-bold px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-all uppercase"
-            title="Aspect Ratio"
+      {/* Error Overlay */}
+      {isStreamLoaded && errorMessage && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950/90 z-50 text-center p-4 sm:p-6">
+          <AlertTriangle className="h-8 w-8 sm:h-10 sm:w-10 text-red-500 mb-3" />
+          <p className="text-white text-xs sm:text-sm font-medium">{errorMessage}</p>
+          <button 
+            onClick={() => loadStream(currentStream!.url)}
+            className="mt-4 px-3 py-1.5 sm:px-4 sm:py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-[10px] sm:text-xs flex items-center gap-2 border border-white/5"
           >
-            {aspectRatio}
-          </button>
-
-          <button
-            onClick={togglePiP}
-            className="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-all"
-            title="Picture-in-Picture"
-          >
-            <PictureInPicture2 className="h-4 w-4" />
-          </button>
-
-          <button
-            onClick={toggleFullscreen}
-            className="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-all"
-            title="Fullscreen (F)"
-          >
-            {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+            <RotateCcw className="h-3 w-3" />
+            Retry
           </button>
         </div>
-      </div>
+      )}
     </div>
   );
 };

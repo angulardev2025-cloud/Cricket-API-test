@@ -443,5 +443,34 @@ fs.writeFileSync(
   'utf8'
 );
 
+// Generate lightweight Search Index for all channels
+const searchIndex = [];
+for (const [code, files] of countryFileGroups.entries()) {
+  const meta = COUNTRY_MAP[code] || { name: code.toUpperCase() };
+  files.forEach(file => {
+    try {
+      const content = fs.readFileSync(path.resolve(__dirname, '..', file), 'utf8');
+      const channels = parseM3UContent(content, code, meta.name);
+      channels.forEach(ch => {
+        searchIndex.push({
+          n: ch.name,
+          c: code,
+          i: ch.id,
+          f: meta.flag || '🌐'
+        });
+      });
+    } catch (e) {}
+  });
+}
+
+// Deduplicate index by name + country
+const uniqueIndex = Array.from(new Map(searchIndex.map(item => [`${item.n}-${item.c}`, item])).values());
+
+fs.writeFileSync(
+  path.join(srcDataDir, 'searchIndex.json'),
+  JSON.stringify(uniqueIndex),
+  'utf8'
+);
+
 console.log(`Generated JSON for ${countriesList.length} countries!`);
-console.log('Sample top countries:', countriesList.slice(0, 10));
+console.log(`Generated Search Index with ${uniqueIndex.length} channels.`);

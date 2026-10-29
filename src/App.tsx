@@ -11,6 +11,7 @@ import { PlaylistModal } from './components/PlaylistModal';
 import { CountryModal } from './components/CountryModal';
 import { Dashboard } from './components/Dashboard';
 import { PinLock } from './components/PinLock';
+import { SimpleView } from './components/SimpleView';
 import {
   Tv,
   Flame,
@@ -20,7 +21,9 @@ import {
   Loader2,
   ArrowLeft,
   ChevronDown,
-  Globe
+  Globe,
+  Layout,
+  LayoutTemplate
 } from 'lucide-react';
 
 const countriesList = rawCountriesList as CountryInfo[];
@@ -45,6 +48,9 @@ export const App: React.FC = () => {
   });
 
   const [view, setView] = useState<'dashboard' | 'player'>('dashboard');
+  const [viewMode, setViewMode] = useState<'normal' | 'simple'>(() => {
+     return (localStorage.getItem('bharat_iptv_view_mode') as 'normal' | 'simple') || 'normal';
+  });
 
   // Selected country code
   const [selectedCountryCode, setSelectedCountryCode] = useState<string>(() => {
@@ -113,6 +119,11 @@ export const App: React.FC = () => {
   const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
   const [isCountryModalOpen, setIsCountryModalOpen] = useState(false);
 
+  // Save view mode
+  useEffect(() => {
+    localStorage.setItem('bharat_iptv_view_mode', viewMode);
+  }, [viewMode]);
+
   // Save selected country to localStorage
   useEffect(() => {
     try {
@@ -123,11 +134,18 @@ export const App: React.FC = () => {
   }, [selectedCountryCode]);
 
   // Load country data dynamically
-  const loadCountryChannels = useCallback(async (code: string) => {
+  const loadCountryChannels = useCallback(async (code: string, targetChannelId?: string) => {
     if (countryCache.has(code)) {
       const cached = countryCache.get(code)!;
       setChannels(cached);
-      setActiveChannel(cached[0] || null);
+      
+      if (targetChannelId) {
+        const found = cached.find(c => c.id === targetChannelId);
+        setActiveChannel(found || cached[0] || null);
+      } else {
+        setActiveChannel(cached[0] || null);
+      }
+
       setSelectedCategory('All');
       setSelectedLanguage('All');
       setSelectedQuality('All');
@@ -142,7 +160,13 @@ export const App: React.FC = () => {
         const data: CountryData = await res.json();
         countryCache.set(code, data.channels);
         setChannels(data.channels);
-        setActiveChannel(data.channels[0] || null);
+        
+        if (targetChannelId) {
+          const found = data.channels.find(c => c.id === targetChannelId);
+          setActiveChannel(found || data.channels[0] || null);
+        } else {
+          setActiveChannel(data.channels[0] || null);
+        }
       } else {
         setChannels(defaultIndiaData as Channel[]);
         setActiveChannel((defaultIndiaData as Channel[])[0] || null);
@@ -163,6 +187,12 @@ export const App: React.FC = () => {
   const handleSelectCountry = (code: string) => {
     setSelectedCountryCode(code);
     loadCountryChannels(code);
+    setView('player');
+  };
+
+  const handleSelectGlobalChannel = (code: string, channelId: string) => {
+    setSelectedCountryCode(code);
+    loadCountryChannels(code, channelId);
     setView('player');
   };
 
@@ -299,8 +329,50 @@ export const App: React.FC = () => {
     return <PinLock onSuccess={() => setIsAuthenticated(true)} />;
   }
 
+  const toggleViewMode = () => setViewMode(prev => prev === 'normal' ? 'simple' : 'normal');
+
+  // Toggle View Mode Button
+  const viewModeToggle = (
+     <button 
+       onClick={toggleViewMode}
+       className="fixed bottom-6 right-6 z-[80] bg-red-600 hover:bg-red-700 text-white p-3.5 rounded-full shadow-[0_10px_30px_rgba(220,38,38,0.5)] transition-all hover:scale-110 active:scale-95 flex items-center gap-2 group"
+     >
+        {viewMode === 'normal' ? <LayoutTemplate className="h-5 w-5" /> : <Layout className="h-5 w-5" />}
+        <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 font-bold text-sm whitespace-nowrap px-0 group-hover:px-1">
+           Switch to {viewMode === 'normal' ? 'Simple' : 'Normal'} View
+        </span>
+     </button>
+  );
+
+  if (viewMode === 'simple') {
+    return (
+       <>
+         <SimpleView 
+           currentChannel={activeChannel}
+           onSelectChannel={handleSelectGlobalChannel}
+           favorites={favorites}
+           onToggleFavorite={toggleFavorite}
+           recents={recents}
+           suggestedChannels={channels}
+         />
+         {viewModeToggle}
+       </>
+    );
+  }
+
   if (view === 'dashboard') {
-    return <Dashboard countries={countriesList} onSelectCountry={handleSelectCountry} />;
+    return (
+      <>
+        <Dashboard 
+          countries={countriesList} 
+          onSelectCountry={handleSelectCountry} 
+          onSelectChannel={handleSelectGlobalChannel}
+          viewMode={viewMode}
+          onToggleViewMode={toggleViewMode}
+        />
+        {viewModeToggle}
+      </>
+    );
   }
 
   return (
@@ -319,13 +391,15 @@ export const App: React.FC = () => {
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* Back to Home Button */}
-        <button
-          onClick={() => setView('dashboard')}
-          className="flex items-center gap-2 text-sm font-semibold text-amber-400 hover:text-white transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span>Back to Country Dashboard</span>
-        </button>
+        <div className="flex items-center justify-between">
+           <button
+             onClick={() => setView('dashboard')}
+             className="flex items-center gap-2 text-sm font-semibold text-amber-400 hover:text-white transition-colors"
+           >
+             <ArrowLeft className="h-4 w-4" />
+             <span>Back to Country Dashboard</span>
+           </button>
+        </div>
 
         {/* Popular Country Quick Pills */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none no-scrollbar">
@@ -637,6 +711,7 @@ export const App: React.FC = () => {
         onClose={() => setIsPlaylistModalOpen(false)}
         currentCountry={currentCountry}
       />
+      {viewModeToggle}
     </div>
   );
 };
