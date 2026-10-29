@@ -10,6 +10,7 @@ import { ChannelCard } from './components/ChannelCard';
 import { PlaylistModal } from './components/PlaylistModal';
 import { CountryModal } from './components/CountryModal';
 import { Dashboard } from './components/Dashboard';
+import { PinLock } from './components/PinLock';
 import {
   Tv,
   Flame,
@@ -30,6 +31,19 @@ const countryCache = new Map<string, Channel[]>();
 countryCache.set('in', defaultIndiaData as Channel[]);
 
 export const App: React.FC = () => {
+  // Check 24-hour PIN authentication
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    try {
+      const authTime = localStorage.getItem('bharat_iptv_auth_time');
+      if (!authTime) return false;
+      const elapsed = Date.now() - parseInt(authTime, 10);
+      const twentyFourHours = 24 * 60 * 60 * 1000;
+      return elapsed < twentyFourHours;
+    } catch {
+      return false;
+    }
+  });
+
   const [view, setView] = useState<'dashboard' | 'player'>('dashboard');
 
   // Selected country code
@@ -280,6 +294,10 @@ export const App: React.FC = () => {
   }, [channels]);
 
   const displayedChannels = filteredChannels.slice(0, visibleCount);
+
+  if (!isAuthenticated) {
+    return <PinLock onSuccess={() => setIsAuthenticated(true)} />;
+  }
 
   if (view === 'dashboard') {
     return <Dashboard countries={countriesList} onSelectCountry={handleSelectCountry} />;
