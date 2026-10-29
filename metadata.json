@@ -1,0 +1,8 @@
+{
+  "name": "Bharat IPTV Player - Live Indian TV",
+  "description": "Stream 850+ live Indian TV channels from the iptv-org in.m3u directory across News, Movies, Music, Sports, Kids, and Regional languages.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
