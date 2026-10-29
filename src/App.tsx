@@ -1,23 +1,62 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import channelsData from './data/channels.json';
-import { Channel } from './types/iptv';
+import rawCountriesList from './data/countriesList.json';
+import defaultIndiaData from './data/channels.json';
+import { Channel, CountryInfo, CountryData } from './types/iptv';
 import { Header } from './components/Header';
 import { VideoPlayer } from './components/VideoPlayer';
 import { CategoryFilter } from './components/CategoryFilter';
 import { ChannelCard } from './components/ChannelCard';
 import { PlaylistModal } from './components/PlaylistModal';
+import { CountryModal } from './components/CountryModal';
 import {
   Tv,
   Flame,
   Radio,
   History,
   Sparkles,
-  ChevronDown
+  ChevronDown,
+  Globe,
+  Loader2
 } from 'lucide-react';
 
-const typedChannels = channelsData as Channel[];
+const countriesList = rawCountriesList as CountryInfo[];
+
+// In-memory cache for loaded country channel datasets
+const countryCache = new Map<string, Channel[]>();
+// Preload India into cache
+countryCache.set('in', defaultIndiaData as Channel[]);
+
+const POPULAR_COUNTRY_CODES = ['in', 'us', 'uk', 'ca', 'au', 'de', 'fr', 'es', 'it', 'br', 'ae', 'pk', 'bd'];
 
 export const App: React.FC = () => {
+  // Selected country code
+  const [selectedCountryCode, setSelectedCountryCode] = useState<string>(() => {
+    try {
+      return localStorage.getItem('bharat_iptv_country') || 'in';
+    } catch {
+      return 'in';
+    }
+  });
+
+  const currentCountry = useMemo(() => {
+    return (
+      countriesList.find((c) => c.code === selectedCountryCode) ||
+      countriesList.find((c) => c.code === 'in') || {
+        code: 'in',
+        name: 'India',
+        flag: '🇮🇳',
+        region: 'Asia',
+        channelCount: defaultIndiaData.length,
+      }
+    );
+  }, [selectedCountryCode]);
+
+  // Channels for the current country
+  const [channels, setChannels] = useState<Channel[]>(() => {
+    return countryCache.get(selectedCountryCode) || (defaultIndiaData as Channel[]);
+  });
+  const [isLoadingCountry, setIsLoadingCountry] = useState(false);
+
   // Favorites stored in localStorage
   const [favorites, setFavorites] = useState<string[]>(() => {
     try {
@@ -38,14 +77,10 @@ export const App: React.FC = () => {
     }
   });
 
-  // Active channel
-  const [activeChannel, setActiveChannel] = useState<Channel>(() => {
-    // Default to popular channel like Aaj Tak or 9XM or first channel
-    const defaultChan =
-      typedChannels.find((c) => c.name.toLowerCase().includes('aaj tak')) ||
-      typedChannels.find((c) => c.name.toLowerCase().includes('9xm')) ||
-      typedChannels[0];
-    return defaultChan;
+  // Active playing channel
+  const [activeChannel, setActiveChannel] = useState<Channel | null>(() => {
+    const initialChannels = countryCache.get(selectedCountryCode) || (defaultIndiaData as Channel[]);
+    return initialChannels[0] || null;
   });
 
   // Filtering states
@@ -56,24 +91,77 @@ export const App: React.FC = () => {
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
   const [showOnlyRecents, setShowOnlyRecents] = useState(false);
   const [visibleCount, setVisibleCount] = useState(36);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Sync favorites to localStorage
+  // Modals
+  const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
+  const [isCountryModalOpen, setIsCountryModalOpen] = useState(false);
+
+  // Save selected country to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('bharat_iptv_country', selectedCountryCode);
+    } catch {
+      // storage unavailable
+    }
+  }, [selectedCountryCode]);
+
+  // Load country data dynamically
+  const loadCountryChannels = useCallback(async (code: string) => {
+    if (countryCache.has(code)) {
+      const cached = countryCache.get(code)!;
+      setChannels(cached);
+      setActiveChannel(cached[0] || null);
+      setSelectedCategory('All');
+      setSelectedLanguage('All');
+      setSelectedQuality('All');
+      setVisibleCount(36);
+      return;
+    }
+
+    setIsLoadingCountry(true);
+    try {
+      const res = await fetch(`/data/countries/${code}.json`);
+      if (res.ok) {
+        const data: CountryData = await res.json();
+        countryCache.set(code, data.channels);
+        setChannels(data.channels);
+        setActiveChannel(data.channels[0] || null);
+      } else {
+        // Fallback to initial data if unavailable
+        setChannels(defaultIndiaData as Channel[]);
+        setActiveChannel((defaultIndiaData as Channel[])[0] || null);
+      }
+    } catch (e) {
+      console.error('Failed to load country data:', e);
+      setChannels(defaultIndiaData as Channel[]);
+      setActiveChannel((defaultIndiaData as Channel[])[0] || null);
+    } finally {
+      setIsLoadingCountry(false);
+      setSelectedCategory('All');
+      setSelectedLanguage('All');
+      setSelectedQuality('All');
+      setVisibleCount(36);
+    }
+  }, []);
+
+  const handleSelectCountry = (code: string) => {
+    if (code === selectedCountryCode) return;
+    setSelectedCountryCode(code);
+    loadCountryChannels(code);
+  };
+
+  // Sync favorites
   useEffect(() => {
     try {
       localStorage.setItem('bharat_iptv_favorites', JSON.stringify(favorites));
-    } catch {
-      // storage unavailable
-    }
+    } catch {}
   }, [favorites]);
 
-  // Sync recents to localStorage
+  // Sync recents
   useEffect(() => {
     try {
       localStorage.setItem('bharat_iptv_recents', JSON.stringify(recents));
-    } catch {
-      // storage unavailable
-    }
+    } catch {}
   }, [recents]);
 
   const toggleFavorite = (channel: Channel) => {
@@ -93,39 +181,33 @@ export const App: React.FC = () => {
       return [channel.id, ...filtered].slice(0, 20);
     });
 
-    // Scroll player into view smoothly if on mobile
     if (window.innerWidth < 768) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, []);
 
-  // Compute distinct categories and languages
+  // Compute distinct categories and languages for current country
   const categories = useMemo(() => {
     const set = new Set<string>();
-    typedChannels.forEach((c) => set.add(c.category));
+    channels.forEach((c) => set.add(c.category));
     return Array.from(set).sort();
-  }, []);
+  }, [channels]);
 
   const languages = useMemo(() => {
     const set = new Set<string>();
-    typedChannels.forEach((c) => set.add(c.language));
+    channels.forEach((c) => set.add(c.language));
     return Array.from(set).sort();
-  }, []);
+  }, [channels]);
 
   // Filter channels based on search and selected options
   const filteredChannels = useMemo(() => {
-    return typedChannels.filter((c) => {
-      // Favorites filter
+    return channels.filter((c) => {
       if (showOnlyFavorites && !favorites.includes(c.id)) {
         return false;
       }
-
-      // Recents filter
       if (showOnlyRecents && !recents.includes(c.id)) {
         return false;
       }
-
-      // Search Query
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase().trim();
         const matchesName = c.name.toLowerCase().includes(query);
@@ -136,28 +218,22 @@ export const App: React.FC = () => {
           return false;
         }
       }
-
-      // Category filter
       if (selectedCategory !== 'All' && c.category !== selectedCategory) {
         return false;
       }
-
-      // Language filter
       if (selectedLanguage !== 'All' && c.language !== selectedLanguage) {
         return false;
       }
-
-      // Quality filter
       if (selectedQuality !== 'All') {
         const matchesQuality = c.streams.some((s) =>
           s.resolution.toLowerCase().includes(selectedQuality.toLowerCase())
         );
         if (!matchesQuality) return false;
       }
-
       return true;
     });
   }, [
+    channels,
     searchQuery,
     selectedCategory,
     selectedLanguage,
@@ -168,7 +244,7 @@ export const App: React.FC = () => {
     recents,
   ]);
 
-  // Handle Channel Zapping (Next / Previous channel)
+  // Channel zapping
   const handleNextChannel = useCallback(() => {
     const currentIndex = filteredChannels.findIndex((c) => c.id === activeChannel?.id);
     if (currentIndex !== -1 && currentIndex < filteredChannels.length - 1) {
@@ -196,13 +272,10 @@ export const App: React.FC = () => {
     setSearchQuery('');
   };
 
-  // Featured channels for quick hero bar
+  // Top featured channels of current country
   const featuredChannels = useMemo(() => {
-    const names = ['Aaj Tak', '9XM', 'NDTV 24x7', 'WION', 'Star Sports 2', 'B4U Movies', 'Colors', 'DD National'];
-    return names
-      .map((n) => typedChannels.find((c) => c.name.toLowerCase().includes(n.toLowerCase())))
-      .filter((c): c is Channel => Boolean(c));
-  }, []);
+    return channels.slice(0, 15);
+  }, [channels]);
 
   const displayedChannels = filteredChannels.slice(0, visibleCount);
 
@@ -214,166 +287,216 @@ export const App: React.FC = () => {
           setSearchQuery(q);
           setVisibleCount(36);
         }}
-        totalChannels={typedChannels.length}
+        currentCountry={currentCountry}
         filteredCount={filteredChannels.length}
-        onOpenPlaylistModal={() => setIsModalOpen(true)}
+        onOpenCountryModal={() => setIsCountryModalOpen(true)}
+        onOpenPlaylistModal={() => setIsPlaylistModalOpen(true)}
       />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
-        {/* Main Stage: Player & Quick Controls */}
-        <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Main Video Screen */}
-          <div className="lg:col-span-8 flex flex-col gap-3">
-            <VideoPlayer
-              channel={activeChannel}
-              onPrevChannel={handlePrevChannel}
-              onNextChannel={handleNextChannel}
-              isFavorite={activeChannel ? favorites.includes(activeChannel.id) : false}
-              onToggleFavorite={() => activeChannel && toggleFavorite(activeChannel)}
-            />
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        {/* Popular Country Quick Pills */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none no-scrollbar">
+          <span className="text-xs font-semibold text-slate-400 shrink-0 flex items-center gap-1.5 mr-1">
+            <Globe className="h-3.5 w-3.5 text-amber-400" />
+            <span>Country:</span>
+          </span>
 
-            {/* Quick Channel Info Bar */}
-            {activeChannel && (
-              <div className="glass-panel p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-xl bg-slate-800 border border-slate-700 font-black text-amber-400 flex items-center justify-center text-lg shadow-inner">
-                    {activeChannel.name.slice(0, 2).toUpperCase()}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-lg font-extrabold text-white">
-                        {activeChannel.name}
-                      </h2>
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                        {activeChannel.category}
-                      </span>
+          {POPULAR_COUNTRY_CODES.map((code) => {
+            const countryItem = countriesList.find((c) => c.code === code);
+            if (!countryItem) return null;
+            const isSelected = countryItem.code === selectedCountryCode;
+            return (
+              <button
+                key={code}
+                onClick={() => handleSelectCountry(code)}
+                className={`shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 transition-all border ${
+                  isSelected
+                    ? 'bg-amber-500 text-slate-950 border-amber-400 font-bold shadow-md shadow-amber-500/20'
+                    : 'bg-slate-900/80 text-slate-300 hover:text-white border-slate-800 hover:bg-slate-800'
+                }`}
+              >
+                <span>{countryItem.flag}</span>
+                <span>{countryItem.name}</span>
+                <span className={`text-[10px] font-normal ${isSelected ? 'text-slate-900' : 'text-slate-500'}`}>
+                  ({countryItem.channelCount})
+                </span>
+              </button>
+            );
+          })}
+
+          <button
+            onClick={() => setIsCountryModalOpen(true)}
+            className="shrink-0 text-xs font-bold px-3.5 py-1.5 rounded-full bg-slate-900 text-amber-400 hover:text-amber-300 border border-amber-500/30 hover:border-amber-400 transition-all flex items-center gap-1"
+          >
+            <span>All 182 Countries</span>
+            <ChevronDown className="h-3.5 w-3.5" />
+          </button>
+        </div>
+
+        {/* Loading Indicator when switching countries */}
+        {isLoadingCountry ? (
+          <div className="glass-panel text-center py-16 rounded-2xl flex flex-col items-center justify-center">
+            <Loader2 className="h-10 w-10 text-amber-500 animate-spin mb-3" />
+            <h3 className="text-base font-bold text-white">Loading {currentCountry.name} TV Channels...</h3>
+            <p className="text-xs text-slate-400 mt-1">Preparing HLS live stream catalog</p>
+          </div>
+        ) : (
+          /* Main Stage: Player & Quick TV Guide */
+          <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* Main Video Screen */}
+            <div className="lg:col-span-8 flex flex-col gap-3">
+              <VideoPlayer
+                channel={activeChannel}
+                onPrevChannel={handlePrevChannel}
+                onNextChannel={handleNextChannel}
+                isFavorite={activeChannel ? favorites.includes(activeChannel.id) : false}
+                onToggleFavorite={() => activeChannel && toggleFavorite(activeChannel)}
+              />
+
+              {/* Quick Channel Info Bar */}
+              {activeChannel && (
+                <div className="glass-panel p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-xl bg-slate-800 border border-slate-700 font-black text-amber-400 flex items-center justify-center text-lg shadow-inner shrink-0">
+                      {activeChannel.name.slice(0, 2).toUpperCase()}
                     </div>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      Language: <span className="text-slate-200">{activeChannel.language}</span> • Available Sources: <span className="text-amber-400 font-bold">{activeChannel.streams.length}</span>
-                    </p>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-lg font-extrabold text-white">
+                          {activeChannel.name}
+                        </h2>
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                          {activeChannel.category}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        Country: <span className="text-slate-200">{currentCountry.name} {currentCountry.flag}</span> • Sources: <span className="text-amber-400 font-bold">{activeChannel.streams.length}</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="hidden sm:flex items-center gap-2 text-xs text-slate-400">
+                    <span className="px-2 py-1 bg-slate-900 border border-slate-800 rounded font-mono">
+                      ← →
+                    </span>
+                    <span>Zap</span>
+                    <span className="px-2 py-1 bg-slate-900 border border-slate-800 rounded font-mono ml-2">
+                      Space
+                    </span>
+                    <span>Play/Pause</span>
                   </div>
                 </div>
+              )}
+            </div>
 
-                {/* Keyboard Shortcuts Hint */}
-                <div className="hidden sm:flex items-center gap-2 text-xs text-slate-400">
-                  <span className="px-2 py-1 bg-slate-900 border border-slate-800 rounded font-mono">
-                    ← →
-                  </span>
-                  <span>Zap Channels</span>
-                  <span className="px-2 py-1 bg-slate-900 border border-slate-800 rounded font-mono ml-2">
-                    Space
-                  </span>
-                  <span>Play/Pause</span>
+            {/* Quick TV Guide Strip */}
+            <div className="lg:col-span-4 glass-panel rounded-2xl p-4 flex flex-col max-h-[580px]">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+                <div className="flex items-center gap-2">
+                  <Flame className="h-4 w-4 text-amber-500" />
+                  <h3 className="font-bold text-sm text-white">
+                    {currentCountry.flag} {currentCountry.name} Guide
+                  </h3>
                 </div>
+                <span className="text-[11px] text-slate-400">
+                  {channels.length} Channels
+                </span>
               </div>
-            )}
-          </div>
 
-          {/* Quick TV Guide / Featured & Recent Strip */}
-          <div className="lg:col-span-4 glass-panel rounded-2xl p-4 flex flex-col max-h-[580px]">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
-              <div className="flex items-center gap-2">
-                <Flame className="h-4 w-4 text-amber-500" />
-                <h3 className="font-bold text-sm text-white">Quick Channels</h3>
+              {/* Quick List Tabs */}
+              <div className="flex gap-2 mb-3">
+                <button
+                  onClick={() => {
+                    setShowOnlyRecents(false);
+                    setShowOnlyFavorites(false);
+                  }}
+                  className={`flex-1 text-xs py-1.5 font-semibold rounded-lg transition-all ${
+                    !showOnlyRecents && !showOnlyFavorites
+                      ? 'bg-amber-500 text-slate-950 font-bold'
+                      : 'bg-slate-900 text-slate-300 hover:text-white'
+                  }`}
+                >
+                  Featured
+                </button>
+                <button
+                  onClick={() => {
+                    setShowOnlyFavorites(true);
+                    setShowOnlyRecents(false);
+                  }}
+                  className={`flex-1 text-xs py-1.5 font-semibold rounded-lg transition-all flex items-center justify-center gap-1 ${
+                    showOnlyFavorites
+                      ? 'bg-amber-500 text-slate-950 font-bold'
+                      : 'bg-slate-900 text-slate-300 hover:text-white'
+                  }`}
+                >
+                  <Sparkles className="h-3 w-3" />
+                  <span>Favorites</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowOnlyRecents(true);
+                    setShowOnlyFavorites(false);
+                  }}
+                  className={`flex-1 text-xs py-1.5 font-semibold rounded-lg transition-all flex items-center justify-center gap-1 ${
+                    showOnlyRecents
+                      ? 'bg-amber-500 text-slate-950 font-bold'
+                      : 'bg-slate-900 text-slate-300 hover:text-white'
+                  }`}
+                >
+                  <History className="h-3 w-3" />
+                  <span>Recents</span>
+                </button>
               </div>
-              <span className="text-[11px] text-slate-400">
-                {typedChannels.length} in India
-              </span>
-            </div>
 
-            {/* Quick List Tabs */}
-            <div className="flex gap-2 mb-3">
-              <button
-                onClick={() => {
-                  setShowOnlyRecents(false);
-                  setShowOnlyFavorites(false);
-                }}
-                className={`flex-1 text-xs py-1.5 font-semibold rounded-lg transition-all ${
-                  !showOnlyRecents && !showOnlyFavorites
-                    ? 'bg-amber-500 text-slate-950 font-bold'
-                    : 'bg-slate-900 text-slate-300 hover:text-white'
-                }`}
-              >
-                Featured
-              </button>
-              <button
-                onClick={() => {
-                  setShowOnlyFavorites(true);
-                  setShowOnlyRecents(false);
-                }}
-                className={`flex-1 text-xs py-1.5 font-semibold rounded-lg transition-all flex items-center justify-center gap-1 ${
-                  showOnlyFavorites
-                    ? 'bg-amber-500 text-slate-950 font-bold'
-                    : 'bg-slate-900 text-slate-300 hover:text-white'
-                }`}
-              >
-                <Sparkles className="h-3 w-3" />
-                <span>Favorites</span>
-              </button>
-              <button
-                onClick={() => {
-                  setShowOnlyRecents(true);
-                  setShowOnlyFavorites(false);
-                }}
-                className={`flex-1 text-xs py-1.5 font-semibold rounded-lg transition-all flex items-center justify-center gap-1 ${
-                  showOnlyRecents
-                    ? 'bg-amber-500 text-slate-950 font-bold'
-                    : 'bg-slate-900 text-slate-300 hover:text-white'
-                }`}
-              >
-                <History className="h-3 w-3" />
-                <span>Recents</span>
-              </button>
-            </div>
+              {/* Scrollable Mini Channel List */}
+              <div className="flex-1 overflow-y-auto space-y-1.5 pr-1">
+                {(showOnlyRecents
+                  ? channels.filter((c) => recents.includes(c.id))
+                  : showOnlyFavorites
+                  ? channels.filter((c) => favorites.includes(c.id))
+                  : featuredChannels
+                ).map((ch) => {
+                  const isSelected = activeChannel?.id === ch.id;
+                  return (
+                    <div
+                      key={ch.id}
+                      onClick={() => handleSelectChannel(ch)}
+                      className={`p-2.5 rounded-xl cursor-pointer flex items-center justify-between transition-all border ${
+                        isSelected
+                          ? 'bg-amber-500/10 border-amber-500 text-white font-bold'
+                          : 'bg-slate-900/60 hover:bg-slate-800 border-slate-800/80 text-slate-300 hover:text-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div
+                          className={`h-7 w-7 rounded-lg text-xs font-bold flex items-center justify-center shrink-0 ${
+                            isSelected ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-300'
+                          }`}
+                        >
+                          {ch.name.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="truncate">
+                          <p className="text-xs truncate">{ch.name}</p>
+                          <p className="text-[10px] text-slate-400 font-normal">
+                            {ch.category}
+                          </p>
+                        </div>
+                      </div>
 
-            {/* Scrollable Mini List */}
-            <div className="flex-1 overflow-y-auto space-y-1.5 pr-1">
-              {(showOnlyRecents
-                ? typedChannels.filter((c) => recents.includes(c.id))
-                : showOnlyFavorites
-                ? typedChannels.filter((c) => favorites.includes(c.id))
-                : featuredChannels
-              ).map((ch) => {
-                const isSelected = activeChannel?.id === ch.id;
-                return (
-                  <div
-                    key={ch.id}
-                    onClick={() => handleSelectChannel(ch)}
-                    className={`p-2.5 rounded-xl cursor-pointer flex items-center justify-between transition-all border ${
-                      isSelected
-                        ? 'bg-amber-500/10 border-amber-500 text-white font-bold'
-                        : 'bg-slate-900/60 hover:bg-slate-800 border-slate-800/80 text-slate-300 hover:text-white'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div
-                        className={`h-7 w-7 rounded-lg text-xs font-bold flex items-center justify-center shrink-0 ${
-                          isSelected ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-300'
-                        }`}
-                      >
-                        {ch.name.slice(0, 2).toUpperCase()}
-                      </div>
-                      <div className="truncate">
-                        <p className="text-xs truncate">{ch.name}</p>
-                        <p className="text-[10px] text-slate-400 font-normal">
-                          {ch.language} • {ch.category}
-                        </p>
-                      </div>
+                      {isSelected ? (
+                        <Radio className="h-3.5 w-3.5 text-amber-400 live-dot shrink-0" />
+                      ) : (
+                        <span className="text-[10px] text-slate-400 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 shrink-0">
+                          {ch.streams[0]?.resolution || 'HD'}
+                        </span>
+                      )}
                     </div>
-
-                    {isSelected ? (
-                      <Radio className="h-3.5 w-3.5 text-amber-400 live-dot shrink-0" />
-                    ) : (
-                      <span className="text-[10px] text-slate-400 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 shrink-0">
-                        {ch.streams[0]?.resolution || 'HD'}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* Channel Browser & Filters */}
         <section className="space-y-6 pt-4">
@@ -381,10 +504,12 @@ export const App: React.FC = () => {
             <div>
               <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
                 <Tv className="h-5 w-5 text-amber-500" />
-                <span>Channel Directory</span>
+                <span>
+                  {currentCountry.flag} {currentCountry.name} Channel Directory
+                </span>
               </h2>
               <p className="text-xs sm:text-sm text-slate-400 mt-1">
-                Browsing {filteredChannels.length} channels from iptv-org India directory
+                Browsing {filteredChannels.length} of {currentCountry.channelCount} live streams
               </p>
             </div>
           </div>
@@ -421,9 +546,9 @@ export const App: React.FC = () => {
           {filteredChannels.length === 0 ? (
             <div className="glass-panel text-center py-16 px-4 rounded-2xl">
               <Tv className="h-12 w-12 text-slate-600 mx-auto mb-3" />
-              <h3 className="text-base font-bold text-white mb-1">No channels found</h3>
+              <h3 className="text-base font-bold text-white mb-1">No channels found in this filter</h3>
               <p className="text-xs text-slate-400 max-w-sm mx-auto mb-4">
-                Try searching with different keywords or resetting category and language filters.
+                Try searching with different keywords or resetting category filters.
               </p>
               <button
                 onClick={resetFilters}
@@ -464,20 +589,36 @@ export const App: React.FC = () => {
         </section>
       </main>
 
-      {/* Playlist Source Modal */}
-      <PlaylistModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        totalChannels={typedChannels.length}
+      {/* Country Selection Modal */}
+      <CountryModal
+        isOpen={isCountryModalOpen}
+        onClose={() => setIsCountryModalOpen(false)}
+        countries={countriesList}
+        selectedCountryCode={selectedCountryCode}
+        onSelectCountry={handleSelectCountry}
       />
 
-      {/* Footer */}
+      {/* Playlist Source Modal */}
+      <PlaylistModal
+        isOpen={isPlaylistModalOpen}
+        onClose={() => setIsPlaylistModalOpen(false)}
+        currentCountry={currentCountry}
+      />
+
+      {/* Global Footer */}
       <footer className="mt-20 border-t border-slate-900 bg-slate-950 py-8 text-center text-xs text-slate-500">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© Bharat IPTV Player • Powered by public streams from iptv-org/iptv (in.m3u)</p>
+          <p>© Global IPTV Player • Powered by public streams from iptv-org/iptv</p>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => setIsCountryModalOpen(true)}
+              className="text-amber-400 hover:underline flex items-center gap-1"
+            >
+              <Globe className="h-3.5 w-3.5" />
+              <span>182 Countries</span>
+            </button>
+            <button
+              onClick={() => setIsPlaylistModalOpen(true)}
               className="text-amber-400 hover:underline"
             >
               M3U Stream Info

@@ -1,52 +1,60 @@
 import React from 'react';
-import { Search, Tv, Info, ExternalLink } from 'lucide-react';
+import { Search, Tv, Info, ExternalLink, ChevronDown, Globe } from 'lucide-react';
+import { CountryInfo } from '../types/iptv';
 
 interface HeaderProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  totalChannels: number;
+  currentCountry: CountryInfo;
   filteredCount: number;
+  onOpenCountryModal: () => void;
   onOpenPlaylistModal: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   searchQuery,
   onSearchChange,
-  totalChannels,
+  currentCountry,
   filteredCount,
+  onOpenCountryModal,
   onOpenPlaylistModal,
 }) => {
   return (
     <header className="sticky top-0 z-40 bg-slate-950/85 backdrop-blur-md border-b border-slate-800/80 px-4 sm:px-6 lg:px-8 py-3.5">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-        {/* Brand */}
-        <div className="flex items-center justify-between w-full md:w-auto">
+        {/* Brand & Country Selector */}
+        <div className="flex items-center justify-between w-full md:w-auto gap-4">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-amber-600 to-amber-400 flex items-center justify-center text-slate-950 shadow-md shadow-amber-500/20">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-amber-600 to-amber-400 flex items-center justify-center text-slate-950 shadow-md shadow-amber-500/20 shrink-0">
               <Tv className="h-5 w-5 font-bold" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="font-extrabold text-lg sm:text-xl text-white tracking-tight">
-                  Bharat IPTV
+                  Global IPTV
                 </h1>
                 <span className="text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded">
                   LIVE
                 </span>
               </div>
               <p className="text-xs text-slate-400">
-                {totalChannels} Indian TV Streams • in.m3u
+                182 Countries • 20,000+ Streams
               </p>
             </div>
           </div>
 
-          {/* Mobile Info Button */}
+          {/* Country Switcher Button */}
           <button
-            onClick={onOpenPlaylistModal}
-            className="md:hidden p-2 rounded-lg bg-slate-900 text-slate-300 hover:text-white border border-slate-800"
-            title="Playlist Info"
+            onClick={onOpenCountryModal}
+            className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white px-3.5 py-2 rounded-xl border border-slate-800 hover:border-amber-500/50 shadow-sm transition-all"
+            title="Switch Country"
           >
-            <Info className="h-4 w-4" />
+            <span className="text-lg leading-none">{currentCountry.flag}</span>
+            <div className="text-left hidden sm:block">
+              <p className="text-xs font-bold leading-tight text-white">{currentCountry.name}</p>
+              <p className="text-[10px] text-amber-400 font-medium">{currentCountry.channelCount} Channels</p>
+            </div>
+            <ChevronDown className="h-3.5 w-3.5 text-slate-400 ml-0.5" />
           </button>
         </div>
 
@@ -58,7 +66,7 @@ export const Header: React.FC<HeaderProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Search 850+ channels (e.g. Aaj Tak, 9XM, Star, Sun, DD...)"
+              placeholder={`Search channels in ${currentCountry.name}...`}
               className="w-full bg-slate-900 text-slate-100 placeholder-slate-400 text-sm rounded-xl pl-10 pr-20 py-2.5 border border-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all shadow-inner"
             />
             {searchQuery ? (
@@ -79,15 +87,23 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Right Action buttons */}
         <div className="hidden md:flex items-center gap-2.5">
           <button
+            onClick={onOpenCountryModal}
+            className="text-xs font-semibold px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 flex items-center gap-1.5 transition-colors"
+          >
+            <Globe className="h-3.5 w-3.5 text-amber-400" />
+            <span>All Countries (182)</span>
+          </button>
+
+          <button
             onClick={onOpenPlaylistModal}
             className="text-xs font-semibold px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 flex items-center gap-1.5 transition-colors"
           >
             <Info className="h-3.5 w-3.5 text-amber-400" />
-            <span>Stream Source</span>
+            <span>M3U Info</span>
           </button>
 
           <a
-            href="https://github.com/iptv-org/iptv/blob/master/streams/in.m3u"
+            href="https://github.com/iptv-org/iptv"
             target="_blank"
             rel="noreferrer"
             className="text-xs font-semibold px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 flex items-center gap-1.5 transition-colors"

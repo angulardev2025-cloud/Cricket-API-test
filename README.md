@@ -1,26 +1,41 @@
-# 📺 Bharat IPTV Player - Live Indian TV
+# 📺 Global IPTV Player - 182 Countries Live TV
 
-A responsive, high-performance **React + TypeScript + Vite + HLS.js** web player powered by the official Indian stream directory from [`iptv-org/iptv`](https://github.com/iptv-org/iptv/blob/master/streams/in.m3u).
+An interactive, high-performance **React + TypeScript + Vite + HLS.js** web player powered by all official country stream playlists from [`iptv-org/iptv`](https://github.com/iptv-org/iptv).
 
 ---
 
 ## ✨ Features
 
-- 🇮🇳 **850+ Live Channels:** News, Entertainment, Movies, Music, Sports, Kids, Devotional, and Regional channels across India.
-- ⚡ **HLS.js Live Streaming Engine:**
-  - Fast live manifest loading with error recovery.
-  - Multi-stream & resolution switcher (automatically try backup source feeds if primary stream is restricted).
-  - Video controls: Play/Pause, Volume bar, Aspect ratio toggle (Contain, Cover, Fill), Fullscreen, Picture-in-Picture (PiP).
-- 🔍 **Instant Search & Multi-Level Filtering:**
-  - Real-time search across 850+ channels.
+- 🌍 **182 Countries & Territories:**
+  - 🇮🇳 India (879 channels)
+  - 🇺🇸 United States (2,347 channels)
+  - 🇬🇧 United Kingdom (624 channels)
+  - 🇨🇦 Canada (387 channels)
+  - 🇦🇺 Australia (134 channels)
+  - 🇩🇪 Germany (422 channels)
+  - 🇫🇷 France (385 channels)
+  - 🇪🇸 Spain (418 channels)
+  - 🇮🇹 Italy (449 channels)
+  - 🇧🇷 Brazil (449 channels)
+  - 🇦🇪 United Arab Emirates (84 channels)
+  - 🇵🇰 Pakistan (85 channels)
+  - 🇧🇩 Bangladesh (42 channels)
+  - ...and 169 more countries across Asia, Europe, Americas, Africa, Middle East, and Oceania!
+- ⚡ **14,500+ Live HLS Streams:**
+  - Fast on-demand JSON loading (`/data/countries/{code}.json`) with in-memory caching for instant country switching.
+  - Multi-stream fallback switcher for channels with backup CDN feeds.
+  - Video controls: Play/Pause, Volume slider, Mute toggle, Aspect ratio toggle (Contain, Cover, Fill), Fullscreen, and Picture-in-Picture (PiP).
+- 🔍 **Search & Multi-Level Filtering:**
+  - Real-time instant search within any selected country.
   - Category filters: *News, Movies, Entertainment, Music, Sports, Kids, Devotional, Infotainment*.
-  - Language filters: *Hindi, Tamil, Telugu, Malayalam, Kannada, Bengali, Punjabi, Gujarati, Marathi, Odia, Assamese, English, Bhojpuri*.
-  - Resolution selector: *1080p Full HD, 720p HD, SD*.
-- ⭐ **Favorites & Recents History:**
-  - One-click channel bookmarking (saved to `localStorage`).
-  - History of recently watched channels for instant zapping.
-- ⌨️ **Smart TV & Keyboard Controls:**
-  - `←` / `→` arrow keys: Channel zapping.
+  - Quality filters: *1080p Full HD, 720p HD, SD*.
+  - Region filters: *Asia, Europe, Americas, Africa, Middle East, Oceania*.
+- ⭐ **Personalization & TV Guide:**
+  - Persistent favorite channels saved in `localStorage`.
+  - Recently watched channels history.
+  - Side TV Guide drawer for instant zapping while streaming.
+- ⌨️ **Keyboard Controls:**
+  - `←` / `→` arrow keys: Zap to previous/next channel.
   - `Space`: Play / Pause.
   - `M`: Mute / Unmute.
   - `F`: Toggle Fullscreen.
@@ -33,7 +48,7 @@ A responsive, high-performance **React + TypeScript + Vite + HLS.js** web player
 # Install dependencies
 npm install
 
-# Start development server
+# Start Vite dev server (port 3000)
 npm run dev
 
 # Production build

@@ -16,11 +16,16 @@ export interface Channel {
   streams: ChannelStream[];
 }
 
-export type PlaybackStatus = 'idle' | 'loading' | 'playing' | 'buffering' | 'error';
-
-export interface PlayerStats {
-  resolution?: string;
-  currentBitrate?: number;
-  bufferLength?: number;
-  droppedFrames?: number;
+export interface CountryInfo {
+  code: string;
+  name: string;
+  flag: string;
+  region: string;
+  channelCount: number;
 }
+
+export interface CountryData extends CountryInfo {
+  channels: Channel[];
+}
+
+export type PlaybackStatus = 'idle' | 'loading' | 'playing' | 'buffering' | 'error';
