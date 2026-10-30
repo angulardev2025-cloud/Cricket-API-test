@@ -1,0 +1,548 @@
+
+{
+    "stations":
+    [
+        {
+    "name": "Akashvani Kanpur",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_345394.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio194/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "FM Rainbow Kanpur",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_947670.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio058/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Lucknow",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/airlucknow.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio046/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "FM Rainbow Lucknow",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_188882.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio047/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Mathura",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/airmathura.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio067/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Najibabad",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_517789.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio162/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Obra",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_265912.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio235/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Rampur",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_850592.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio179/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Varanasi",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/airvaranasi.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio094/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Almora",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_199564.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio122/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Dehradun",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/airdehradun.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio191/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Pauri",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_125539.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio107/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Bangla",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/air-bangla.jpg",
+    "streamURL": "https://airhlspush.pc.cdn.bitgravity.com/httppush/hlspbaudio137/hlspbaudio137_Auto.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Kolkata Geetanjali",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_817824.jpg",
+    "streamURL": "https://airhlspush.pc.cdn.bitgravity.com/httppush/hlspbaudio055/hlspbaudio055_Auto.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Kolkata Sanchayita",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_480353.jpg",
+    "streamURL": "https://airhlspush.pc.cdn.bitgravity.com/httppush/hlspbaudio056/hlspbaudio056_Auto.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "FM Gold Kolkata",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/airkolkatafmgold.jpg",
+    "streamURL": "https://airhlspush.pc.cdn.bitgravity.com/httppush/hlspbaudio057/hlspbaudio057_Auto.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "FM Rainbow Kolkata",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/airkolkatafmrainbow.jpg",
+    "streamURL": "https://airhlspush.pc.cdn.bitgravity.com/httppush/hlspbaudio058/hlspbaudio058_Auto.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "vbs Kolkata",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_258910.jpg",
+    "streamURL": "https://airhlspush.pc.cdn.bitgravity.com/httppush/hlspbaudio275/hlspbaudio275_Auto.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Kurseong",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_319202.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio183/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Murshidabad",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_565906.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio169/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Shantiniketan",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_121090.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio247/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Maitree",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_895638.jpg",
+    "streamURL": "https://airhlspush.pc.cdn.bitgravity.com/httppush/hlspbaudio245/hlspbaudio245_Auto.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Siliguri",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_229808.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio164/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Gujarati",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/air-gujarati.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio135/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Kokrajhar",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/KOKRAJHAR.jpeg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio055/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Aaradhana",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/Aaradhana.jpg",
+    "streamURL": "https://airhlspush.pc.cdn.bitgravity.com/httppush/hlspbaudio003/hlspbaudio003_Auto.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "FM Rainbow Chennai",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_327320.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio022/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Live News 24x7",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/air-live.jpg",
+    "streamURL": "https://airhlspush.pc.cdn.bitgravity.com/httppush/hlspbaudio002/hlspbaudio002_Auto.m3u8",
+    "next": "telugu",
+    "previous": "odia",
+    "page": "/channel-air-punjabi/"
+},
+
+{
+    "name": "Akasvani Marathi Mumbai Ashmita",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/airmumbaiasmita.jpg",
+    "streamURL": "https://airhlspush.pc.cdn.bitgravity.com/httppush/hlspbaudio010/hlspbaudio010_Auto.m3u8",
+    "next": "odia",
+    "previous": "gujarati",
+    "page": "/channel-air-marathi/"
+},
+{
+    "name": "Akashvani Punjabi",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/air-punjabi.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio138/playlist.m3u8",
+    "next": "telugu",
+    "previous": "odia",
+    "page": "/channel-air-punjabi/"
+},
+{
+    "name": "Raagam",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/raagam.jpg",
+    "streamURL": "https://airhlspush.pc.cdn.bitgravity.com/httppush/hlspbaudioragam/hlspbaudioragam_Auto.m3u8",
+    "next": "gold",
+    "previous": "telugu",
+    "page": "/channel-Raagam/"
+},
+{
+    "name": "FM Gold Delhi",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/fm-gold.jpg",
+    "streamURL": "https://airhlspush.pc.cdn.bitgravity.com/httppush/hlspbaudio005/hlspbaudio005_Auto.m3u8",
+    "next": "rainbow",
+    "previous": "Raagam",
+    "page": "/channel-fm-gold/"
+},
+{
+    "name": "FM Rainbow Delhi",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/fm-rainbow.jpg",
+    "streamURL": "https://airhlspush.pc.cdn.bitgravity.com/httppush/hlspbaudio004/hlspbaudio004_Auto.m3u8",
+    "next": "malayalam",
+    "previous": "gold",
+    "page": "/channel-fm-rainbow/"
+},
+{
+    "name": "Akashvani Kerla",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/malayalam.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio230/playlist.m3u8",
+    "next": "north-east",
+    "previous": "rainbow",
+    "page": "/channel-air-malayalam/"
+},
+{
+    "name": "Akashvani Tamil Nadu",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/air-tamil.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio025/playlist.m3u8",
+    "next": "vividh-bharti",
+    "previous": "raagam",
+    "page": "/channel-air-tamil/"
+},
+{
+    "name": "Vividh Bharati",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/vividh-bharati.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio001/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+
+{
+    "name": "Akashvani Aadilabad",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/adilabad.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio218/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Delhi Indraprastha",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_435004.jpg",
+    "streamURL": "https://airhlspush.pc.cdn.bitgravity.com/httppush/hlspbaudio006/hlspbaudio006_Auto.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "VBS Delhi",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_624699.jpeg",
+    "streamURL": "https://airhlspush.pc.cdn.bitgravity.com/httppush/hlspbaudio238/hlspbaudio238_Auto.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Port Blair",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/srivijayapuram.jpeg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio038/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Anantapur",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/airanantapur.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio054/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Kadapa",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/aircuddapah.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio018/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Kurnool",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/airkurnool.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio052/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Markapur",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_789049.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio039/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "FM Simhapuri Nellore",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_436373.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio168/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Tirupati",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/airtirupati.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio144/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akasvani Andhra Pradesh",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/airvijayawada.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio175/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "FM Rainbow Vijayawada",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/fmrainvijayawada.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio174/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "VB Telugu Vijayawada",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_792040.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio176/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Visakhapatnam",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/airvisakhapc.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio080/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "FM Rainbow Visakhapatnam",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/airvisakhafm.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio081/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Itanagar",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_458761.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio277/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "FM Arun Itanagar",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_131123.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio234/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Pasighat",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_941772.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio268/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Tawang",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_265072.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio272/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Tezu",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_237299.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio267/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Dibrugarh",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_499538.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio255/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+
+{
+    "name": "Akashvani Diphu",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_399279.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio271/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Guwahati Mahabahu",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/air-assamese.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio133/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Guwahati Pragjyotishpur",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_646762.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio237/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Haflong",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_226622.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio258/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Jorhat",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_983621.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio261/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Nagaon",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_706896.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio260/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Silchar",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/airsilchar.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio090/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Tezpur",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_797923.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio270/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Bhagalpur",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_687132.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio292/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Darbhanga",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/RADIO_645992.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio160/playlist.m3u8",
+    "next": "assamase",
+    "previous": "tamil",
+    "page": "/channel-vividh-bharati/"
+},
+{
+    "name": "Akashvani Patna",
+    "logo": "https://airdco.pc.cdn.bitgravity.com/images/airpatna.jpg",
+    "streamURL": "https://air.pc.cdn.bitgravity.com/air/live/pbaudio087/playlist.m3u8",
+    "nex

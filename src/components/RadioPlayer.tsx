@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import Hls from 'hls.js';
 import { 
   Play, 
   Pause, 
@@ -20,17 +21,25 @@ import {
   Activity,
   Sliders,
   Zap,
-  Check
+  Check,
+  Landmark,
+  Sparkles,
+  Radio
 } from 'lucide-react';
 import radioData from '../data/radioStations.json';
+import govRadioData from '../data/govRadioStations.json';
 
-interface Station {
+export interface Station {
+  id?: string;
   name: string;
   language?: string;
   streamURL: string;
   website?: string;
   desc?: string;
   logo: string;
+  isGov?: boolean;
+  state?: string;
+  subType?: string;
 }
 
 // Winamp-style Player Themes
@@ -176,15 +185,50 @@ const WINAMP_THEMES: Record<string, WinampTheme> = {
 
 type VisualizerMode = 'bars' | 'wave' | 'vu';
 type SensitivityLevel = 'normal' | 'boost' | 'ultra';
+type ChannelSourceTab = 'all' | 'gov' | 'commercial' | 'dropbox';
+
+// Smart suggestions presets
+const SMART_SUGGESTIONS = [
+  { label: 'Akashvani AIR', query: 'Akashvani', icon: '🏛️', type: 'gov' },
+  { label: 'FM Rainbow', query: 'Rainbow', icon: '🌈', type: 'rainbow' },
+  { label: 'Vividh Bharati', query: 'Vividh', icon: '📻', type: 'vividh' },
+  { label: 'FM Gold', query: 'Gold', icon: '🥇', type: 'gold' },
+  { label: 'AIR Raagam', query: 'Raagam', icon: '🎵', type: 'classical' },
+  { label: 'Live News 24x7', query: 'News', icon: '🔴', type: 'news' },
+  { label: 'Dropbox Jukebox', query: 'dropbox', icon: '📦', type: 'dropbox' },
+  { label: 'Bollywood Hits', query: 'Bollywood', icon: '✨', type: 'bollywood' },
+];
 
 export const RadioPlayer: React.FC = () => {
-  const [currentStation, setCurrentStation] = useState<Station | null>(radioData.stations[0] || null);
+  // Merge general radio stations (262) and Government AIR stations (68)
+  const generalStations = useMemo(() => {
+    return (radioData.stations as Station[]).map((s, idx) => ({
+      ...s,
+      id: s.id || `gen-${idx + 1}`,
+      isGov: false
+    }));
+  }, []);
+
+  const govStations = useMemo(() => {
+    return (govRadioData.stations as Station[]).map(s => ({
+      ...s,
+      isGov: true
+    }));
+  }, []);
+
+  const allStations = useMemo(() => {
+    return [...govStations, ...generalStations];
+  }, [govStations, generalStations]);
+
+  // Current playing station
+  const [currentStation, setCurrentStation] = useState<Station | null>(govStations[0] || generalStations[0] || null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [volume, setVolume] = useState(0.8);
   const [isMuted, setIsMuted] = useState(false);
   const [search, setSearch] = useState('');
-  const [selectedLanguage, setSelectedLanguage] = useState('All');
+  const [channelSourceTab, setChannelSourceTab] = useState<ChannelSourceTab>('all');
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [activeTab, setActiveTab] = useState<'player' | 'library'>('player');
   const [isFavorite, setIsFavorite] = useState(false);
 
@@ -217,13 +261,13 @@ export const RadioPlayer: React.FC = () => {
   const [pulsePhase, setPulsePhase] = useState(0);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const hlsRef = useRef<Hls | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animFrameRef = useRef<number | null>(null);
   const phaseRef = useRef(0);
   const peakCapsRef = useRef<number[]>(new Array(12).fill(12));
 
-  const stations = radioData.stations as Station[];
   const activeTheme = WINAMP_THEMES[currentThemeId] || WINAMP_THEMES.classic;
 
   const handleSelectTheme = (themeId: string) => {
@@ -264,50 +308,106 @@ export const RadioPlayer: React.FC = () => {
 
   // Count of Dropbox jukebox tracks
   const dropboxCount = useMemo(() => {
-    return stations.filter(s => s.streamURL.includes('dropbox.com')).length;
-  }, [stations]);
+    return allStations.filter(s => s.streamURL.includes('dropbox.com')).length;
+  }, [allStations]);
 
-  // Extract unique languages for filter, with Dropbox positioned right after 'All'
+  // Extract unique filter categories based on the active channel source tab
   const filterCategories = useMemo(() => {
+    if (channelSourceTab === 'gov') {
+      const set = new Set<string>();
+      govStations.forEach(s => {
+        if (s.subType) set.add(s.subType);
+        if (s.state && s.state !== 'National') set.add(s.state);
+      });
+      return ['All Govt', 'FM Rainbow', 'FM Gold', 'Vividh Bharati', 'Classical', 'News', ...Array.from(set).filter(x => !['FM Rainbow', 'FM Gold', 'Vividh Bharati', 'Classical', 'News'].includes(x)).sort()];
+    }
+
+    if (channelSourceTab === 'commercial') {
+      const set = new Set<string>();
+      generalStations.forEach(s => {
+        if (s.language) set.add(s.language.trim());
+      });
+      return ['All', 'Dropbox', ...Array.from(set).sort()];
+    }
+
+    if (channelSourceTab === 'dropbox') {
+      return ['All Dropbox'];
+    }
+
+    // 'all' tab
     const set = new Set<string>();
-    stations.forEach(s => {
+    allStations.forEach(s => {
       if (s.language) set.add(s.language.trim());
     });
-    return ['All', 'Dropbox', ...Array.from(set).sort()];
-  }, [stations]);
+    return ['All', 'Govt AIR (68)', 'Dropbox (14)', ...Array.from(set).sort()];
+  }, [channelSourceTab, govStations, generalStations, allStations]);
 
   // Filtered stations for library grid
   const filteredStations = useMemo(() => {
-    return stations.filter(s => {
+    let baseList: Station[];
+    if (channelSourceTab === 'gov') {
+      baseList = govStations;
+    } else if (channelSourceTab === 'commercial') {
+      baseList = generalStations;
+    } else if (channelSourceTab === 'dropbox') {
+      baseList = allStations.filter(s => s.streamURL.includes('dropbox.com'));
+    } else {
+      baseList = allStations;
+    }
+
+    // If search is non-empty and user is on 'all' tab, search across all 330 channels!
+    const targetPool = search.trim().length > 0 && channelSourceTab === 'all' ? allStations : baseList;
+
+    return targetPool.filter(s => {
+      const q = search.toLowerCase();
       const matchesSearch = 
-        s.name.toLowerCase().includes(search.toLowerCase()) || 
-        (s.language && s.language.toLowerCase().includes(search.toLowerCase())) ||
-        (s.desc && s.desc.toLowerCase().includes(search.toLowerCase()));
+        !search.trim() ||
+        s.name.toLowerCase().includes(q) || 
+        (s.language && s.language.toLowerCase().includes(q)) ||
+        (s.state && s.state.toLowerCase().includes(q)) ||
+        (s.subType && s.subType.toLowerCase().includes(q)) ||
+        (s.desc && s.desc.toLowerCase().includes(q));
       
-      let matchesFilter = true;
-      if (selectedLanguage === 'Dropbox') {
-        matchesFilter = Boolean(s.streamURL.includes('dropbox.com'));
-      } else if (selectedLanguage !== 'All') {
-        matchesFilter = Boolean(s.language && s.language.toLowerCase() === selectedLanguage.toLowerCase());
+      let matchesCategory = true;
+      if (channelSourceTab === 'gov') {
+        if (selectedCategory !== 'All Govt' && selectedCategory !== 'All') {
+          matchesCategory = Boolean(
+            (s.subType && s.subType.toLowerCase() === selectedCategory.toLowerCase()) ||
+            (s.state && s.state.toLowerCase() === selectedCategory.toLowerCase()) ||
+            (s.language && s.language.toLowerCase().includes(selectedCategory.toLowerCase()))
+          );
+        }
+      } else {
+        if (selectedCategory === 'Govt AIR (68)') {
+          matchesCategory = Boolean(s.isGov);
+        } else if (selectedCategory === 'Dropbox (14)' || selectedCategory === 'Dropbox') {
+          matchesCategory = Boolean(s.streamURL.includes('dropbox.com'));
+        } else if (selectedCategory !== 'All' && selectedCategory !== 'All Dropbox') {
+          matchesCategory = Boolean(s.language && s.language.toLowerCase().includes(selectedCategory.toLowerCase()));
+        }
       }
 
-      return matchesSearch && matchesFilter;
+      return matchesSearch && matchesCategory;
     });
-  }, [search, selectedLanguage, stations]);
+  }, [search, selectedCategory, channelSourceTab, allStations, govStations, generalStations]);
 
-  // Search suggestions (top 6 matches for radio search dropdown out of 262)
+  // Smart Search suggestions (top 8 matches across all 330 stations with priority scoring)
   const searchSuggestions = useMemo(() => {
     if (!search.trim() || search.length < 2) return [];
-    return stations.filter(s => {
-      const matchesSearch = 
-        s.name.toLowerCase().includes(search.toLowerCase()) ||
-        (s.language && s.language.toLowerCase().includes(search.toLowerCase()));
-      if (selectedLanguage === 'Dropbox') {
-        return matchesSearch && s.streamURL.includes('dropbox.com');
-      }
-      return matchesSearch;
-    }).slice(0, 6);
-  }, [search, selectedLanguage, stations]);
+    const q = search.toLowerCase();
+
+    return allStations
+      .filter(s => {
+        return (
+          s.name.toLowerCase().includes(q) ||
+          (s.language && s.language.toLowerCase().includes(q)) ||
+          (s.state && s.state.toLowerCase().includes(q)) ||
+          (s.subType && s.subType.toLowerCase().includes(q)) ||
+          (s.desc && s.desc.toLowerCase().includes(q))
+        );
+      })
+      .slice(0, 8);
+  }, [search, allStations]);
 
   // Sync volume with audio element
   useEffect(() => {
@@ -334,11 +434,6 @@ export const RadioPlayer: React.FC = () => {
         analyser.fftSize = 64; // 32 frequency bins, ideal balance for 60fps responsiveness
         analyser.smoothingTimeConstant = 0.78;
         analyserRef.current = analyser;
-
-        // NOTE: We deliberately do NOT call createMediaElementSource(audioRef.current),
-        // because browsers strictly silence cross-origin audio when routed through Web Audio API
-        // without explicit CORS headers. By letting the native HTML5 <audio> element play directly,
-        // all 262 radio streams and Dropbox jukebox tracks are 100% audible and clear!
       }
     } catch (err) {
       console.warn("Web Audio initialization notice:", err);
@@ -373,63 +468,30 @@ export const RadioPlayer: React.FC = () => {
       let rawMid = 0;
       let rawTreble = 0;
       let rawOverall = 0;
-      let hasRealFft = false;
       const freqBins: number[] = new Array(32).fill(0);
 
-      // Attempt to read direct byte frequency data from AnalyserNode
-      if (analyserRef.current) {
-        const bufferLength = analyserRef.current.frequencyBinCount;
-        const dataArray = new Uint8Array(bufferLength);
-        analyserRef.current.getByteFrequencyData(dataArray);
+      // Acoustic beat & harmonic synthesizer driving the frequency spectrum
+      const t = now / 1000;
+      // Natural 126 BPM rhythm (~2.1 Hz) with kick, snare, vocal melody oscillation
+      const kickBeat = Math.pow(Math.max(0, Math.sin(t * Math.PI * 2.1)), 5);
+      const subRumble = Math.sin(t * 3.8) * 0.2 + 0.3;
+      rawBass = Math.min(1, (kickBeat * 0.75 + subRumble * 0.25) * currentVol * sensMultiplier);
 
-        let sum = 0;
-        for (let i = 0; i < bufferLength; i++) {
-          sum += dataArray[i];
-          if (i < 32) freqBins[i] = dataArray[i];
-        }
+      const snareHit = Math.pow(Math.max(0, Math.cos(t * Math.PI * 2.1 + 0.4)), 6);
+      const melodyVibe = Math.sin(t * 7.5) * 0.25 + 0.4;
+      rawMid = Math.min(1, (snareHit * 0.55 + melodyVibe * 0.45) * currentVol * sensMultiplier);
 
-        if (sum > 10) {
-          hasRealFft = true;
-          // Sub-bass & Bass (bins 0-3)
-          rawBass = (freqBins[0] + freqBins[1] + freqBins[2] + freqBins[3]) / (4 * 255);
-          // Mid frequencies (bins 4-11)
-          let midSum = 0;
-          for (let i = 4; i <= 11; i++) midSum += freqBins[i];
-          rawMid = midSum / (8 * 255);
-          // Treble frequencies (bins 12-24)
-          let trebleSum = 0;
-          for (let i = 12; i <= 24; i++) trebleSum += freqBins[i];
-          rawTreble = trebleSum / (13 * 255);
-          // Overall energy
-          rawOverall = (sum / (bufferLength * 255));
-        }
-      }
+      const hihat = Math.pow(Math.max(0, Math.sin(t * Math.PI * 4.2)), 8);
+      const shimmer = Math.sin(t * 15.2) * 0.2 + 0.3;
+      rawTreble = Math.min(1, (hihat * 0.6 + shimmer * 0.4) * currentVol * sensMultiplier);
 
-      // If stream has no CORS headers or Web Audio API returned all zeros,
-      // seamlessly blend in our acoustic beat & harmonic synthesizer!
-      if (!hasRealFft) {
-        const t = now / 1000;
-        // Natural 126 BPM rhythm (~2.1 Hz) with kick, snare, vocal melody oscillation
-        const kickBeat = Math.pow(Math.max(0, Math.sin(t * Math.PI * 2.1)), 5);
-        const subRumble = Math.sin(t * 3.8) * 0.2 + 0.3;
-        rawBass = Math.min(1, (kickBeat * 0.75 + subRumble * 0.25) * currentVol * sensMultiplier);
+      rawOverall = Math.min(1, (rawBass * 0.45 + rawMid * 0.35 + rawTreble * 0.2));
 
-        const snareHit = Math.pow(Math.max(0, Math.cos(t * Math.PI * 2.1 + 0.4)), 6);
-        const melodyVibe = Math.sin(t * 7.5) * 0.25 + 0.4;
-        rawMid = Math.min(1, (snareHit * 0.55 + melodyVibe * 0.45) * currentVol * sensMultiplier);
-
-        const hihat = Math.pow(Math.max(0, Math.sin(t * Math.PI * 4.2)), 8);
-        const shimmer = Math.sin(t * 15.2) * 0.2 + 0.3;
-        rawTreble = Math.min(1, (hihat * 0.6 + shimmer * 0.4) * currentVol * sensMultiplier);
-
-        rawOverall = Math.min(1, (rawBass * 0.45 + rawMid * 0.35 + rawTreble * 0.2));
-
-        // Generate synthetic spectrum bins
-        for (let i = 0; i < 32; i++) {
-          const factor = i < 6 ? rawBass : i < 18 ? rawMid : rawTreble;
-          const harmonic = Math.sin(t * (4 + i * 1.5) + i) * 20;
-          freqBins[i] = Math.max(10, Math.min(255, factor * 220 + harmonic));
-        }
+      // Generate dynamic spectrum bins
+      for (let i = 0; i < 32; i++) {
+        const factor = i < 6 ? rawBass : i < 18 ? rawMid : rawTreble;
+        const harmonic = Math.sin(t * (4 + i * 1.5) + i) * 20;
+        freqBins[i] = Math.max(10, Math.min(255, factor * 220 + harmonic));
       }
 
       // Apply sensitivity scaling
@@ -442,7 +504,6 @@ export const RadioPlayer: React.FC = () => {
       setTrebleLevel(tScaled);
 
       // Sound-reactive pulsation speed: Sound intensity directly accelerates color phase
-      // Higher loudness/beats -> faster rotation & pulsation
       const speedFactor = 0.03 + (oScaled * 0.12) + (bScaled * 0.09);
       phaseRef.current += speedFactor;
       setPulsePhase(phaseRef.current);
@@ -452,17 +513,16 @@ export const RadioPlayer: React.FC = () => {
       const updatedPeaks = [...peakCapsRef.current];
 
       for (let i = 0; i < 12; i++) {
-        // Sample bins across spectrum
         const binIndex = Math.min(31, Math.floor((i / 12) * 24));
         const normalized = (freqBins[binIndex] / 255) * 100 * sensMultiplier;
         const barHeight = Math.max(12, Math.min(100, normalized));
         newDialBars.push(barHeight);
 
-        // Peak Hold LED Cap Logic (classic Winamp feature)
+        // Peak Hold LED Cap Logic (Winamp feature)
         if (barHeight >= updatedPeaks[i]) {
           updatedPeaks[i] = barHeight;
         } else {
-          updatedPeaks[i] = Math.max(barHeight, updatedPeaks[i] - 1.8); // Smooth gravity drop
+          updatedPeaks[i] = Math.max(barHeight, updatedPeaks[i] - 1.8);
         }
       }
 
@@ -509,6 +569,17 @@ export const RadioPlayer: React.FC = () => {
     };
   }, [isPlaying, sensitivity, volume, isMuted]);
 
+  // Clean up Hls on unmount
+  useEffect(() => {
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+  }, []);
+
+  // Play a station with support for both HLS (.m3u8) and direct MP3/AAC streams
   const handlePlayStation = (station: Station) => {
     setupWebAudio();
 
@@ -522,23 +593,74 @@ export const RadioPlayer: React.FC = () => {
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
-    setSearch('');
     setActiveTab('player'); // Switch to player tab on mobile when playing
+
+    const streamUrl = getAudioSource(station.streamURL);
+    const isHls = streamUrl.includes('.m3u8');
+
+    // Destroy previous HLS instance if any
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
 
     if (audioRef.current) {
       audioRef.current.pause();
-      audioRef.current.src = getAudioSource(station.streamURL);
-      audioRef.current.load();
-      audioRef.current.play()
-        .then(() => {
-          setIsPlaying(true);
-          setIsLoading(false);
-          setupWebAudio();
-        })
-        .catch(err => {
-          console.error("Playback error:", err);
-          setIsLoading(false);
+
+      if (isHls && Hls.isSupported()) {
+        // Hls.js playback for desktop Chrome, Firefox, Edge, etc.
+        const hls = new Hls({
+          enableWorker: true,
+          lowLatencyMode: true,
+          backBufferLength: 60
         });
+        hls.loadSource(streamUrl);
+        hls.attachMedia(audioRef.current);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          audioRef.current?.play()
+            .then(() => {
+              setIsPlaying(true);
+              setIsLoading(false);
+              setupWebAudio();
+            })
+            .catch(err => {
+              console.error("HLS Play error:", err);
+              setIsLoading(false);
+            });
+        });
+        hls.on(Hls.Events.ERROR, (_, data) => {
+          if (data.fatal) {
+            console.warn("HLS fatal error:", data.type);
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                hls.startLoad();
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                hls.recoverMediaError();
+                break;
+              default:
+                hls.destroy();
+                setIsLoading(false);
+                break;
+            }
+          }
+        });
+        hlsRef.current = hls;
+      } else {
+        // Safari native HLS or Direct raw audio streams (MP3, AAC, Dropbox)
+        audioRef.current.src = streamUrl;
+        audioRef.current.load();
+        audioRef.current.play()
+          .then(() => {
+            setIsPlaying(true);
+            setIsLoading(false);
+            setupWebAudio();
+          })
+          .catch(err => {
+            console.error("Audio playback error:", err);
+            setIsLoading(false);
+          });
+      }
     }
   };
 
@@ -592,17 +714,92 @@ export const RadioPlayer: React.FC = () => {
   const progressPercentage = duration > 0 ? Math.min(100, Math.max(0, (currentTime / duration) * 100)) : 0;
 
   // Sound-Reactive Derived Visual Properties
-  // 1. Light Brightness: scales with overall sound energy
   const dynamicBrightness = 1 + (overallLevel * 0.45);
-  // 2. Glow Size: expands with deep bass hits
   const dynamicGlowPx = Math.round(18 + bassLevel * 65);
   const dynamicBackdropGlowPx = Math.round(120 + bassLevel * 100);
-  // 3. Dial Vibration / Scale: subtle bass pump
   const dynamicDialScale = 1 + (bassLevel * 0.055);
-  // 4. Colour Pulsation Speed & Hue Shift: sound energy shifts dynamic hue
   const dynamicHueShift = Math.sin(pulsePhase * 0.6) * (10 + bassLevel * 25);
-  // Dynamic breathing pulse period in seconds (faster on loud music)
   const dynamicPulseDuration = Math.max(0.4, 2.4 - overallLevel * 1.8).toFixed(2);
+
+  // Helper to render proper badges for any channel
+  const renderChannelBadges = (station: Station, isHero = false) => {
+    const isStationDropbox = station.streamURL.includes('dropbox.com');
+    const isGov = station.isGov;
+
+    return (
+      <div className={`flex flex-wrap items-center gap-1.5 ${isHero ? 'justify-center' : ''}`}>
+        {/* Government AIR Official Badge */}
+        {isGov && (
+          <span className="inline-flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-emerald-500/20 text-amber-300 border border-amber-500/40 shadow-sm">
+            <Landmark className="h-2.5 w-2.5 text-amber-400 shrink-0" />
+            <span>Govt AIR</span>
+          </span>
+        )}
+
+        {/* Sub-Type Badge */}
+        {station.subType === 'FM Rainbow' && (
+          <span className="inline-flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full bg-gradient-to-r from-pink-500/20 via-purple-500/20 to-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm">
+            <span>🌈 Rainbow</span>
+          </span>
+        )}
+
+        {station.subType === 'FM Gold' && (
+          <span className="inline-flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/50 shadow-sm">
+            <span>🥇 Gold</span>
+          </span>
+        )}
+
+        {station.subType === 'Vividh Bharati' && (
+          <span className="inline-flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm">
+            <span>📻 Vividh Bharati</span>
+          </span>
+        )}
+
+        {station.subType === 'Classical' && (
+          <span className="inline-flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-sm">
+            <span>🎵 Classical</span>
+          </span>
+        )}
+
+        {station.subType === 'News' && (
+          <span className="inline-flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 shadow-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
+            <span>24x7 News</span>
+          </span>
+        )}
+
+        {/* Dropbox Jukebox Badge */}
+        {isStationDropbox && (
+          <span className="inline-flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/40 shadow-sm">
+            <Disc className="h-2.5 w-2.5 text-fuchsia-400 animate-spin" />
+            <span>Jukebox</span>
+          </span>
+        )}
+
+        {/* Commercial Live FM Badge */}
+        {!isGov && !isStationDropbox && (
+          <span className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+            <Radio className="h-2.5 w-2.5 text-cyan-400" />
+            <span>Live FM</span>
+          </span>
+        )}
+
+        {/* State or Region Pill */}
+        {station.state && station.state !== 'National' && (
+          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-white/10">
+            {station.state}
+          </span>
+        )}
+
+        {/* Language Pill */}
+        {station.language && !isHero && (
+          <span className="text-[9px] font-medium px-2 py-0.5 rounded-full bg-white/5 text-slate-400 border border-white/5">
+            {station.language}
+          </span>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div 
@@ -639,7 +836,7 @@ export const RadioPlayer: React.FC = () => {
         }}
       />
 
-      {/* HTML5 Audio with full timeupdate and duration listener */}
+      {/* HTML5 Audio with full timeupdate, duration, and native speaker output */}
       <audio 
         ref={audioRef}
         preload="metadata"
@@ -710,7 +907,7 @@ export const RadioPlayer: React.FC = () => {
               </span>
             </div>
             <p className="text-[10px] text-slate-400 font-mono">
-              Web Audio API • AnalyserNode • 44.1 kHz
+              330 Stations Total • 68 Govt AIR • 262 Commercial
             </p>
           </div>
         </div>
@@ -795,7 +992,6 @@ export const RadioPlayer: React.FC = () => {
                         }`}
                       >
                         <div className="flex items-center gap-2.5">
-                          {/* Theme Color Swatch Pill */}
                           <div 
                             className={`w-5 h-5 rounded-full bg-gradient-to-tr ${thm.swatchGradient} shadow-md shrink-0 border border-white/20 flex items-center justify-center`}
                           >
@@ -874,16 +1070,16 @@ export const RadioPlayer: React.FC = () => {
                  
                  {/* Top Winamp LCD Status Badges */}
                  <div className="text-center z-10 space-y-1">
-                    <div className="flex items-center justify-center gap-1.5">
+                    <div className="flex items-center justify-center gap-1.5 flex-wrap">
                       <span 
-                        className="text-[9px] font-black tracking-[0.25em] uppercase px-2 py-0.5 rounded-full border shadow-sm font-mono"
+                        className="text-[9px] font-black tracking-[0.2em] uppercase px-2 py-0.5 rounded-full border shadow-sm font-mono"
                         style={{
                           background: `rgba(${activeTheme.glowRaw}, 0.15)`,
                           borderColor: `rgba(${activeTheme.glowRaw}, 0.4)`,
                           color: activeTheme.primary
                         }}
                       >
-                        {isSeekable ? 'JUKEBOX AUDIO' : 'LIVE FM DIAL'}
+                        {currentStation?.isGov ? '🏛️ GOVT AIR' : isSeekable ? 'JUKEBOX' : 'LIVE FM'}
                       </span>
                       <span className="text-[9px] font-mono font-bold text-slate-400 bg-black/40 px-1.5 py-0.5 rounded border border-white/5">
                         {dbReadout}
@@ -902,10 +1098,10 @@ export const RadioPlayer: React.FC = () => {
 
                     <div className="flex items-center justify-center gap-2">
                        <span 
-                         className="text-xs sm:text-sm font-extrabold uppercase tracking-widest"
+                         className="text-xs sm:text-sm font-extrabold uppercase tracking-widest truncate max-w-[200px]"
                          style={{ color: activeTheme.secondary }}
                        >
-                         {isSeekable && duration > 0 ? `Total: ${formatTime(duration)}` : (currentStation?.language || 'Global')}
+                         {isSeekable && duration > 0 ? `Total: ${formatTime(duration)}` : (currentStation?.state || currentStation?.language || 'National')}
                        </span>
                     </div>
                  </div>
@@ -916,7 +1112,6 @@ export const RadioPlayer: React.FC = () => {
                       const peakCap = peakCaps[i] || heightPercent;
                       return (
                         <div key={i} className="relative flex flex-col items-center justify-end h-full w-2">
-                          {/* Falling Peak Hold Cap (Winamp Signature) */}
                           {isPlaying && (
                             <div 
                               className="w-2 h-0.5 rounded-full mb-0.5 transition-all duration-75"
@@ -927,7 +1122,6 @@ export const RadioPlayer: React.FC = () => {
                               }}
                             />
                           )}
-                          {/* Main Spectrum Bar */}
                           <div 
                             className="w-1.5 rounded-full transition-all duration-75"
                             style={{ 
@@ -944,28 +1138,10 @@ export const RadioPlayer: React.FC = () => {
               </div>
            </div>
 
-           {/* Audio Station Details Card */}
-           <div className="text-center space-y-1 px-4 w-full max-w-sm">
-              <div className="inline-flex items-center gap-2 mb-1">
-                {isSeekable ? (
-                  <span 
-                    className="text-[10px] font-extrabold px-3 py-0.5 rounded-full border flex items-center gap-1.5 shadow-sm"
-                    style={{
-                      background: `rgba(${activeTheme.glowRaw}, 0.15)`,
-                      color: activeTheme.primary,
-                      borderColor: `rgba(${activeTheme.glowRaw}, 0.35)`
-                    }}
-                  >
-                    <Disc className="h-3 w-3 animate-spin" style={{ color: activeTheme.primary }} />
-                    <span>Dropbox Track • Full Length & Scrubbing</span>
-                  </span>
-                ) : (
-                  <span className="text-[10px] font-extrabold px-3 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30 flex items-center gap-1.5 shadow-sm">
-                    <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-ping" />
-                    <span>Continuous Live Broadcast</span>
-                  </span>
-                )}
-              </div>
+           {/* Audio Station Details Card with Badges */}
+           <div className="text-center space-y-2 px-4 w-full max-w-sm">
+              {currentStation && renderChannelBadges(currentStation, true)}
+
               <h3 
                 className="text-xl sm:text-2xl font-black tracking-tight leading-tight transition-all duration-150 text-white"
                 style={{
@@ -1069,7 +1245,6 @@ export const RadioPlayer: React.FC = () => {
                  borderColor: `rgba(${activeTheme.glowRaw}, 0.25)`
                }}
              >
-                {/* Time Display Header */}
                 <div className="flex items-center justify-between text-xs font-mono font-bold">
                    <div 
                      className="flex items-center gap-1 px-2 py-0.5 rounded border"
@@ -1090,7 +1265,6 @@ export const RadioPlayer: React.FC = () => {
                    </div>
                 </div>
 
-                {/* Progress / Seek Slider */}
                 <div className="relative group/seek pt-1">
                    <input
                      type="range"
@@ -1118,13 +1292,17 @@ export const RadioPlayer: React.FC = () => {
              <div className="w-full max-w-sm px-3.5 py-2.5 flex items-center justify-between bg-[#080d1a]/60 rounded-xl border border-white/10 text-xs">
                 <div className="flex items-center gap-2">
                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                   <span className="font-black text-red-400 tracking-wider text-[11px]">LIVE BROADCAST</span>
+                   <span className="font-black text-red-400 tracking-wider text-[11px]">
+                     {currentStation?.isGov ? 'AIR OFFICIAL BROADCAST' : 'LIVE BROADCAST'}
+                   </span>
                 </div>
-                <span className="text-[10px] font-medium text-slate-400 font-mono">Continuous Stream • Audio-Reactive</span>
+                <span className="text-[10px] font-medium text-slate-400 font-mono">
+                  {currentStation?.streamURL.includes('.m3u8') ? 'HLS Stream' : 'Live Stream'}
+                </span>
              </div>
            )}
 
-           {/* CONTROLS - Mobile-friendly layout with FWD / BWD when seekable */}
+           {/* CONTROLS */}
            <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-4 w-full max-w-md px-2">
               <button 
                 onClick={() => setIsFavorite(!isFavorite)}
@@ -1203,36 +1381,71 @@ export const RadioPlayer: React.FC = () => {
            </div>
         </div>
 
-        {/* RIGHT PANEL: DEDICATED 262 RADIO STATIONS SEARCH & LIBRARY (7 cols on lg) */}
-        <div className={`lg:col-span-7 flex flex-col space-y-4 animate-in fade-in slide-in-from-right-4 duration-500 h-[calc(100vh-170px)] lg:h-[700px] overflow-hidden ${activeTab === 'player' ? 'hidden lg:flex' : 'flex'}`}>
+        {/* RIGHT PANEL: DEDICATED CHANNEL TABS (Govt AIR vs All Channels), SEARCH & LIBRARY (7 cols on lg) */}
+        <div className={`lg:col-span-7 flex flex-col space-y-3.5 animate-in fade-in slide-in-from-right-4 duration-500 h-[calc(100vh-170px)] lg:h-[700px] overflow-hidden ${activeTab === 'player' ? 'hidden lg:flex' : 'flex'}`}>
            
-           {/* Dedicated Radio Stations Search Box (Searching strictly out of 262 radio stations) */}
-           <div className="space-y-3 shrink-0 relative z-50">
-              <div className="flex items-center justify-between">
-                 <div className="flex items-center gap-2">
-                    <RadioIcon className="h-5 w-5 animate-pulse" style={{ color: activeTheme.primary }} />
-                    <h3 className="text-base font-black text-white uppercase tracking-tight">Radio Stations Library</h3>
-                 </div>
-                 <span 
-                   className="text-xs font-mono px-3 py-1 rounded-full border shadow-sm"
-                   style={{
-                     background: `rgba(${activeTheme.glowRaw}, 0.15)`,
-                     borderColor: `rgba(${activeTheme.glowRaw}, 0.35)`,
-                     color: activeTheme.primary
-                   }}
-                 >
-                    {filteredStations.length} / 262 Radio Channels
-                 </span>
-              </div>
+           {/* DEDICATED SOURCE TABS (ALL / GOVT AIR / COMMERCIAL / DROPBOX) */}
+           <div className="flex items-center gap-1.5 p-1 bg-[#080d1a]/90 backdrop-blur-md rounded-2xl border border-white/10 shadow-md overflow-x-auto scrollbar-none no-scrollbar shrink-0">
+              <button
+                onClick={() => { setChannelSourceTab('all'); setSelectedCategory('All'); }}
+                className={`px-3 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shrink-0 ${channelSourceTab === 'all' ? 'text-black shadow-md' : 'text-slate-300 hover:text-white hover:bg-white/5'}`}
+                style={channelSourceTab === 'all' ? { background: `linear-gradient(135deg, ${activeTheme.primary} 0%, ${activeTheme.secondary} 100%)` } : {}}
+              >
+                <LayoutGrid className="h-3.5 w-3.5" />
+                <span>All Channels</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full font-bold bg-black/20">{allStations.length}</span>
+              </button>
 
+              <button
+                onClick={() => { setChannelSourceTab('gov'); setSelectedCategory('All Govt'); }}
+                className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shrink-0 border ${
+                  channelSourceTab === 'gov' 
+                    ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-emerald-500 text-black border-amber-400 shadow-lg shadow-amber-500/30' 
+                    : 'text-amber-300 hover:text-white border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20'
+                }`}
+              >
+                <Landmark className="h-3.5 w-3.5 text-amber-400" />
+                <span>Govt AIR Stations</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full font-black bg-black/30 text-amber-200 border border-amber-400/30">
+                  {govStations.length}
+                </span>
+              </button>
+
+              <button
+                onClick={() => { setChannelSourceTab('commercial'); setSelectedCategory('All'); }}
+                className={`px-3 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shrink-0 ${channelSourceTab === 'commercial' ? 'text-black shadow-md' : 'text-slate-300 hover:text-white hover:bg-white/5'}`}
+                style={channelSourceTab === 'commercial' ? { background: `linear-gradient(135deg, ${activeTheme.primary} 0%, ${activeTheme.secondary} 100%)` } : {}}
+              >
+                <RadioIcon className="h-3.5 w-3.5" />
+                <span>Commercial FM</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full font-bold bg-black/20">{generalStations.length}</span>
+              </button>
+
+              <button
+                onClick={() => { setChannelSourceTab('dropbox'); setSelectedCategory('All Dropbox'); }}
+                className={`px-3 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shrink-0 ${channelSourceTab === 'dropbox' ? 'text-black shadow-md' : 'text-fuchsia-300 hover:text-white hover:bg-fuchsia-500/10'}`}
+                style={channelSourceTab === 'dropbox' ? { background: `linear-gradient(135deg, #d946ef 0%, #818cf8 100%)` } : {}}
+              >
+                <Disc className="h-3.5 w-3.5" />
+                <span>Dropbox Jukebox</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full font-bold bg-black/20">{dropboxCount}</span>
+              </button>
+           </div>
+
+           {/* SEARCH BOX & SMART SUGGESTIONS */}
+           <div className="space-y-2 shrink-0 relative z-50">
               <div className="relative">
                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: activeTheme.primary }} />
                  <input 
                    type="text"
                    value={search}
                    onChange={(e) => setSearch(e.target.value)}
-                   placeholder="Search 262 radio channels..."
-                   className="w-full bg-[#080d1a]/95 backdrop-blur-md border border-white/15 rounded-2xl py-3.5 pl-12 pr-12 outline-none text-xs sm:text-sm transition-all text-white placeholder-slate-400 shadow-lg focus:border-white/30"
+                   placeholder={
+                     channelSourceTab === 'gov' 
+                       ? "Search 68 Akashvani, Rainbow, Gold, Vividh stations..." 
+                       : "Search all 330 radio channels (Akashvani, FM Gold, Bollywood, etc.)..."
+                   }
+                   className="w-full bg-[#080d1a]/95 backdrop-blur-md border border-white/15 rounded-2xl py-3 pl-12 pr-12 outline-none text-xs sm:text-sm transition-all text-white placeholder-slate-400 shadow-lg focus:border-white/30"
                    style={{
                      boxShadow: `0 0 15px rgba(${activeTheme.glowRaw}, 0.1)`
                    }}
@@ -1246,56 +1459,106 @@ export const RadioPlayer: React.FC = () => {
                    </button>
                  )}
 
-                 {/* Radio Search Suggestions Dropdown (strictly out of 262 radio channels) */}
-                 {searchSuggestions.length > 0 && (
+                 {/* SMART AUTOCOMPLETE SUGGESTIONS DROPDOWN */}
+                 {searchSuggestions.length > 0 && search.trim().length >= 2 && (
                    <div className="absolute top-full left-0 right-0 mt-2 bg-[#080d1a]/98 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.95)] overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2">
                       <div className="p-2 border-b border-white/10 bg-black/40 flex items-center justify-between">
-                         <span className="text-[10px] font-bold uppercase tracking-wider px-2" style={{ color: activeTheme.primary }}>
-                           Radio Station Suggestions
-                         </span>
+                         <div className="flex items-center gap-1.5 px-2">
+                           <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+                           <span className="text-[10px] font-black uppercase tracking-wider text-white">Smart Match Suggestions</span>
+                         </div>
                          <span className="text-[10px] text-slate-400 px-2">{searchSuggestions.length} found</span>
                       </div>
                       {searchSuggestions.map((s, idx) => (
                          <button
                            key={`${s.name}-${idx}`}
-                           onClick={() => handlePlayStation(s)}
-                           className="w-full flex items-center justify-between p-3 hover:bg-white/10 transition-colors group text-left border-b border-white/5 last:border-0"
+                           onClick={() => {
+                             handlePlayStation(s);
+                           }}
+                           className="w-full flex items-center justify-between p-2.5 sm:p-3 hover:bg-white/10 transition-colors group text-left border-b border-white/5 last:border-0"
                          >
                             <div className="flex items-center gap-3 min-w-0">
-                               <div 
-                                 className="h-9 w-9 rounded-xl flex items-center justify-center text-black font-bold shrink-0 shadow-md group-hover:scale-105 transition-transform"
-                                 style={{
-                                   background: `linear-gradient(135deg, ${activeTheme.primary} 0%, ${activeTheme.secondary} 100%)`
-                                 }}
-                               >
-                                  <Music className="h-4 w-4" />
-                               </div>
+                               {s.logo && s.logo.startsWith('http') ? (
+                                 <img 
+                                   src={s.logo} 
+                                   alt={s.name} 
+                                   className="h-9 w-9 rounded-xl object-cover shrink-0 shadow border border-white/10 group-hover:scale-105 transition-transform"
+                                   onError={(e) => {
+                                     (e.target as HTMLElement).style.display = 'none';
+                                   }}
+                                 />
+                               ) : (
+                                 <div 
+                                   className="h-9 w-9 rounded-xl flex items-center justify-center text-black font-bold shrink-0 shadow-md group-hover:scale-105 transition-transform"
+                                   style={{
+                                     background: s.isGov ? 'linear-gradient(135deg, #f59e0b 0%, #10b981 100%)' : `linear-gradient(135deg, ${activeTheme.primary} 0%, ${activeTheme.secondary} 100%)`
+                                   }}
+                                 >
+                                    {s.isGov ? <Landmark className="h-4 w-4 text-black" /> : <Music className="h-4 w-4 text-black" />}
+                                 </div>
+                               )}
                                <div className="min-w-0">
-                                  <p className="text-xs font-bold text-white group-hover:text-amber-200 transition-colors truncate">{s.name}</p>
-                                  <p className="text-[9px] text-slate-400 uppercase tracking-wider">{s.language || 'Global'}</p>
-                               </div>
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-xs font-bold text-white group-hover:text-amber-200 transition-colors truncate">{s.name}</p>
+                                    {renderChannelBadges(s)}
+                                  </div>
+                                  <p className="text-[9px] text-slate-400 uppercase tracking-wider mt-0.5">
+                                    {s.state ? `${s.state} • ` : ''}{s.language || 'Global'} • {s.desc || 'Audio Stream'}
+                                  </p>
+                                </div>
                             </div>
-                            <Play className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity fill-current" style={{ color: activeTheme.primary }} />
+                            <Play className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity fill-current shrink-0" style={{ color: activeTheme.primary }} />
                          </button>
                       ))}
                    </div>
                  )}
               </div>
 
-              {/* Category & Language Filter Pills with Dropbox Tab */}
+              {/* SMART SUGGESTION CHIPS (ONE-TAP SMART SEARCH) */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none no-scrollbar">
+                <span className="text-[10px] font-bold text-slate-400 shrink-0 flex items-center gap-1 mr-1">
+                  <Sparkles className="h-3 w-3 text-amber-400" />
+                  <span>Smart Filters:</span>
+                </span>
+                {SMART_SUGGESTIONS.map((item) => (
+                  <button
+                    key={item.label}
+                    onClick={() => {
+                      if (item.type === 'gov') {
+                        setChannelSourceTab('gov');
+                        setSelectedCategory('All Govt');
+                        setSearch('');
+                      } else if (item.type === 'dropbox') {
+                        setChannelSourceTab('dropbox');
+                        setSelectedCategory('All Dropbox');
+                        setSearch('');
+                      } else {
+                        setSearch(item.query);
+                      }
+                    }}
+                    className={`shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all flex items-center gap-1 ${
+                      search.toLowerCase() === item.query.toLowerCase()
+                        ? 'bg-amber-500 text-black border-amber-400 font-black shadow-md'
+                        : 'bg-[#080d1a]/80 text-slate-300 hover:text-white border-white/10 hover:bg-white/10'
+                    }`}
+                  >
+                    <span>{item.icon}</span>
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* CATEGORY & REGION FILTER PILLS */}
               <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none no-scrollbar">
                  {filterCategories.map(cat => {
-                    const isDropboxPill = cat === 'Dropbox';
-                    const isSelected = selectedLanguage === cat;
+                    const isSelected = selectedCategory === cat;
                     return (
                       <button 
                         key={cat}
-                        onClick={() => setSelectedLanguage(cat)}
-                        className={`shrink-0 px-3.5 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 ${
+                        onClick={() => setSelectedCategory(cat)}
+                        className={`shrink-0 px-3 py-1 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 ${
                           isSelected 
-                          ? 'text-black shadow-md' 
-                          : isDropboxPill
-                          ? 'bg-[#080d1a]/90 text-slate-200 hover:text-white border-white/20 hover:bg-white/10'
+                          ? 'text-black shadow-md font-black' 
                           : 'bg-[#080d1a]/80 text-slate-300 hover:text-white border-white/10 hover:bg-white/10'
                         }`}
                         style={isSelected ? {
@@ -1304,37 +1567,20 @@ export const RadioPlayer: React.FC = () => {
                           boxShadow: `0 0 15px rgba(${activeTheme.glowRaw}, 0.4)`
                         } : {}}
                       >
-                         {isDropboxPill && <Disc className={`h-3.5 w-3.5 ${isSelected ? 'animate-spin' : ''}`} style={!isSelected ? { color: activeTheme.primary } : {}} />}
                          <span>{cat}</span>
-                         {isDropboxPill && (
-                           <span 
-                             className="text-[10px] px-1.5 py-0.2 rounded-full font-black border"
-                             style={isSelected ? {
-                               background: 'rgba(0,0,0,0.25)',
-                               borderColor: 'rgba(0,0,0,0.3)',
-                               color: '#000'
-                             } : {
-                               background: `rgba(${activeTheme.glowRaw}, 0.2)`,
-                               borderColor: `rgba(${activeTheme.glowRaw}, 0.4)`,
-                               color: activeTheme.primary
-                             }}
-                           >
-                             {dropboxCount}
-                           </span>
-                         )}
                       </button>
                     );
                  })}
               </div>
            </div>
 
-           {/* Complete List of 262 Radio Stations */}
-           <div className="flex-1 overflow-y-auto space-y-2.5 pr-2 custom-scrollbar pb-16 lg:pb-0">
+           {/* COMPLETE LIST OF STATIONS WITH PROPER BADGES */}
+           <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar pb-16 lg:pb-0">
               {filteredStations.length === 0 ? (
                  <div className="text-center py-16 bg-[#080d1a]/40 rounded-3xl border border-white/5">
                     <Music className="h-10 w-10 text-slate-600 mx-auto mb-3" />
                     <h4 className="text-sm font-bold text-white">No radio stations found</h4>
-                    <p className="text-xs text-slate-400 mt-1">Try searching out of the 262 radio stations.</p>
+                    <p className="text-xs text-slate-400 mt-1">Try switching tabs or adjusting search query.</p>
                  </div>
               ) : (
                  filteredStations.map((station, idx) => {
@@ -1342,9 +1588,9 @@ export const RadioPlayer: React.FC = () => {
                     const isStationDropbox = station.streamURL.includes('dropbox.com');
                     return (
                        <button
-                         key={`${station.name}-${idx}`}
+                         key={`${station.name}-${station.id || idx}`}
                          onClick={() => handlePlayStation(station)}
-                         className={`w-full flex items-center justify-between p-3.5 rounded-2xl border transition-all group text-left ${
+                         className={`w-full flex items-center justify-between p-3 rounded-2xl border transition-all group text-left ${
                            isSelected 
                            ? 'shadow-lg' 
                            : 'bg-[#080d1a]/60 border-white/5 hover:bg-white/5 hover:border-white/20'
@@ -1355,59 +1601,67 @@ export const RadioPlayer: React.FC = () => {
                            boxShadow: `0 0 25px rgba(${activeTheme.glowRaw}, 0.25)`
                          } : {}}
                        >
-                          <div className="flex items-center gap-3.5 min-w-0">
-                             <div 
-                               className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center shrink-0 shadow-lg transition-transform group-hover:scale-105"
-                               style={{
-                                 background: isSelected 
-                                   ? `linear-gradient(135deg, ${activeTheme.primary} 0%, ${activeTheme.secondary} 100%)` 
-                                   : 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
-                                 color: isSelected ? '#000' : '#fff'
-                               }}
-                             >
-                                {isSelected && isPlaying ? (
-                                   <Loader2 className="h-5 w-5 animate-spin" />
-                                ) : isStationDropbox ? (
-                                   <Disc className="h-5 w-5" />
-                                ) : (
-                                   <Music className="h-5 w-5" />
-                                )}
-                             </div>
+                          <div className="flex items-center gap-3 min-w-0">
+                             {/* Station Artwork or Icon */}
+                             {station.logo && station.logo.startsWith('http') ? (
+                               <div className="relative shrink-0">
+                                 <img 
+                                   src={station.logo} 
+                                   alt={station.name}
+                                   className={`h-11 w-11 rounded-2xl object-cover shadow-lg transition-transform group-hover:scale-105 border ${isSelected ? 'border-amber-400' : 'border-white/10'}`}
+                                   onError={(e) => {
+                                     (e.target as HTMLElement).style.display = 'none';
+                                   }}
+                                 />
+                                 {isSelected && isPlaying && (
+                                   <div className="absolute inset-0 bg-black/50 rounded-2xl flex items-center justify-center">
+                                     <Activity className="h-5 w-5 animate-pulse text-white" />
+                                   </div>
+                                 )}
+                               </div>
+                             ) : (
+                               <div 
+                                 className="h-11 w-11 rounded-2xl flex items-center justify-center shrink-0 shadow-lg transition-transform group-hover:scale-105"
+                                 style={{
+                                   background: isSelected 
+                                     ? `linear-gradient(135deg, ${activeTheme.primary} 0%, ${activeTheme.secondary} 100%)` 
+                                     : station.isGov
+                                     ? 'linear-gradient(135deg, #b45309 0%, #047857 100%)'
+                                     : 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+                                   color: isSelected ? '#000' : '#fff'
+                                 }}
+                               >
+                                  {isSelected && isPlaying ? (
+                                     <Activity className="h-5 w-5 animate-pulse text-black" />
+                                  ) : station.isGov ? (
+                                     <Landmark className="h-5 w-5 text-amber-300" />
+                                  ) : isStationDropbox ? (
+                                     <Disc className="h-5 w-5 text-fuchsia-300" />
+                                  ) : (
+                                     <Music className="h-5 w-5 text-slate-300" />
+                                  )}
+                               </div>
+                             )}
+
                              <div className="min-w-0">
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-wrap">
                                   <p 
                                     className="text-xs sm:text-sm font-bold truncate transition-colors"
                                     style={isSelected ? { color: activeTheme.primary, fontWeight: 900 } : { color: '#fff' }}
                                   >
                                      {station.name}
                                   </p>
-                                  {isStationDropbox && (
-                                     <span 
-                                       className="text-[9px] font-extrabold px-1.5 py-0.2 rounded border uppercase tracking-wider shrink-0"
-                                       style={{
-                                         background: `rgba(${activeTheme.glowRaw}, 0.2)`,
-                                         borderColor: `rgba(${activeTheme.glowRaw}, 0.4)`,
-                                         color: activeTheme.primary
-                                       }}
-                                     >
-                                       Jukebox
-                                     </span>
-                                  )}
+                                  {renderChannelBadges(station)}
                                 </div>
                                 <p className="text-[10px] text-slate-400 truncate mt-0.5 font-medium">
-                                   {station.desc || 'Audio Stream'}
+                                   {station.state ? `${station.state} • ` : ''}{station.desc || 'Audio Stream'}
                                 </p>
                              </div>
                           </div>
 
-                          <div className="flex items-center gap-2.5 shrink-0">
-                             {station.language && (
-                                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-slate-300">
-                                   {station.language}
-                                </span>
-                             )}
+                          <div className="flex items-center gap-2 shrink-0 ml-2">
                              <div 
-                               className="h-8 w-8 rounded-full flex items-center justify-center transition-all shadow-md"
+                               className="h-8 w-8 rounded-full flex items-center justify-center transition-all shadow-md shrink-0"
                                style={isSelected ? {
                                  background: activeTheme.primary,
                                  color: '#000',
@@ -1417,7 +1671,11 @@ export const RadioPlayer: React.FC = () => {
                                  color: '#94a3b8'
                                }}
                              >
-                                <Play className="h-3.5 w-3.5 fill-current ml-0.5" />
+                                {isSelected && isPlaying ? (
+                                  <Pause className="h-3.5 w-3.5 fill-current" />
+                                ) : (
+                                  <Play className="h-3.5 w-3.5 fill-current ml-0.5" />
+                                )}
                               </div>
                           </div>
                        </button>
@@ -1428,30 +1686,37 @@ export const RadioPlayer: React.FC = () => {
         </div>
       </div>
 
-      {/* Tab Switcher for Mobile */}
+      {/* Tab Switcher for Mobile Devices */}
       <div className="lg:hidden fixed bottom-6 left-4 right-4 flex items-center justify-center z-[100]">
-         <div className="flex items-center bg-[#080d1a]/95 backdrop-blur-2xl border border-white/15 rounded-2xl p-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.9)] w-full max-w-xs">
+         <div className="flex items-center bg-[#080d1a]/95 backdrop-blur-2xl border border-white/15 rounded-2xl p-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.9)] w-full max-w-sm gap-1">
             <button 
               onClick={() => setActiveTab('player')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black tracking-widest transition-all ${activeTab === 'player' ? 'text-black shadow-lg' : 'text-slate-400 hover:text-white'}`}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[10px] font-black tracking-wider transition-all ${activeTab === 'player' ? 'text-black shadow-lg' : 'text-slate-400 hover:text-white'}`}
               style={activeTab === 'player' ? {
                 background: `linear-gradient(135deg, ${activeTheme.primary} 0%, ${activeTheme.secondary} 100%)`,
                 boxShadow: `0 0 20px rgba(${activeTheme.glowRaw}, 0.5)`
               } : {}}
             >
-               <Music className="h-4 w-4" />
+               <Music className="h-3.5 w-3.5" />
                <span>PLAYER</span>
             </button>
             <button 
-              onClick={() => setActiveTab('library')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black tracking-widest transition-all ${activeTab === 'library' ? 'text-black shadow-lg' : 'text-slate-400 hover:text-white'}`}
-              style={activeTab === 'library' ? {
+              onClick={() => { setActiveTab('library'); setChannelSourceTab('all'); }}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[10px] font-black tracking-wider transition-all ${activeTab === 'library' && channelSourceTab === 'all' ? 'text-black shadow-lg' : 'text-slate-400 hover:text-white'}`}
+              style={activeTab === 'library' && channelSourceTab === 'all' ? {
                 background: `linear-gradient(135deg, ${activeTheme.primary} 0%, ${activeTheme.secondary} 100%)`,
                 boxShadow: `0 0 20px rgba(${activeTheme.glowRaw}, 0.5)`
               } : {}}
             >
-               <LayoutGrid className="h-4 w-4" />
-               <span>STATIONS (262)</span>
+               <LayoutGrid className="h-3.5 w-3.5" />
+               <span>ALL (330)</span>
+            </button>
+            <button 
+              onClick={() => { setActiveTab('library'); setChannelSourceTab('gov'); setSelectedCategory('All Govt'); }}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[10px] font-black tracking-wider transition-all ${activeTab === 'library' && channelSourceTab === 'gov' ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/40' : 'text-amber-400 hover:text-white'}`}
+            >
+               <Landmark className="h-3.5 w-3.5" />
+               <span>GOV AIR (68)</span>
             </button>
          </div>
       </div>
