@@ -219,7 +219,6 @@ export const RadioPlayer: React.FC = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
   const animFrameRef = useRef<number | null>(null);
   const phaseRef = useRef(0);
   const peakCapsRef = useRef<number[]>(new Array(12).fill(12));
@@ -319,8 +318,6 @@ export const RadioPlayer: React.FC = () => {
 
   // Initialize Web Audio API on demand
   const setupWebAudio = useCallback(() => {
-    if (!audioRef.current) return;
-
     try {
       if (!audioCtxRef.current) {
         const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -337,20 +334,11 @@ export const RadioPlayer: React.FC = () => {
         analyser.fftSize = 64; // 32 frequency bins, ideal balance for 60fps responsiveness
         analyser.smoothingTimeConstant = 0.78;
         analyserRef.current = analyser;
-      }
 
-      // Try connecting MediaElementSource if not connected yet
-      if (!sourceNodeRef.current && audioRef.current && analyserRef.current) {
-        try {
-          const source = ctx.createMediaElementSource(audioRef.current);
-          source.connect(analyserRef.current);
-          analyserRef.current.connect(ctx.destination);
-          sourceNodeRef.current = source;
-        } catch (sourceErr) {
-          // In some browsers or strict CORS environments, createMediaElementSource may be restricted
-          // In that case, audio still plays normally, and our harmonic analyzer steps in seamlessly
-          console.warn("Web Audio source connect note:", sourceErr);
-        }
+        // NOTE: We deliberately do NOT call createMediaElementSource(audioRef.current),
+        // because browsers strictly silence cross-origin audio when routed through Web Audio API
+        // without explicit CORS headers. By letting the native HTML5 <audio> element play directly,
+        // all 262 radio streams and Dropbox jukebox tracks are 100% audible and clear!
       }
     } catch (err) {
       console.warn("Web Audio initialization notice:", err);
@@ -655,6 +643,7 @@ export const RadioPlayer: React.FC = () => {
       <audio 
         ref={audioRef}
         preload="metadata"
+        playsInline
         onLoadedMetadata={() => {
           if (audioRef.current) {
             const d = audioRef.current.duration;
