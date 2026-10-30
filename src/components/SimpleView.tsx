@@ -47,6 +47,7 @@ export const SimpleView: React.FC<SimpleViewProps> = ({
               onNextChannel={() => {}}
               isFavorite={favorites.includes(currentChannel.id)}
               onToggleFavorite={() => onToggleFavorite(currentChannel)}
+              onTogglePiP={() => {}}
             />
             <div className="flex items-center justify-between p-2">
               <div className="flex items-center gap-3">

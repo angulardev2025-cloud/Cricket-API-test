@@ -117,6 +117,20 @@ export const App: React.FC = () => {
   // Modals
   const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
   const [isCountryModalOpen, setIsCountryModalOpen] = useState(false);
+  const [isFloatingPiP, setIsFloatingPiP] = useState(false);
+  const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
 
   // Save view mode
   useEffect(() => {
@@ -309,6 +323,46 @@ export const App: React.FC = () => {
     }
   }, [filteredChannels, activeChannel?.id, handleSelectChannel]);
 
+  // Global Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return;
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        const video = document.querySelector('video');
+        if (video) {
+          if (video.paused) video.play();
+          else video.pause();
+        }
+      } else if (e.code === 'ArrowDown' || e.code === 'KeyN') {
+        e.preventDefault();
+        handleNextChannel();
+      } else if (e.code === 'ArrowUp' || e.code === 'KeyP') {
+        e.preventDefault();
+        handlePrevChannel();
+      } else if (e.code === 'KeyM') {
+        e.preventDefault();
+        const video = document.querySelector('video');
+        if (video) video.muted = !video.muted;
+      } else if (e.code === 'KeyF') {
+        e.preventDefault();
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      } else if (e.code === 'Escape') {
+        setIsFloatingPiP(false);
+        setIsCountryModalOpen(false);
+        setIsPlaylistModalOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleNextChannel, handlePrevChannel]);
+
   const resetFilters = () => {
     setSelectedCategory('All');
     setSelectedLanguage('All');
@@ -333,6 +387,11 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#07090e] text-slate-100 flex flex-col font-sans">
+      {!isOnline && (
+        <div className="bg-amber-500 text-slate-950 px-4 py-2 text-center text-xs font-bold flex items-center justify-center gap-2 z-[150] shadow-lg sticky top-0">
+          <span>⚠️ You are offline. Cached streams, favorites, and radio stations remain accessible.</span>
+        </div>
+      )}
       <Header
         searchQuery={searchQuery}
         onSearchChange={(q) => {
@@ -444,6 +503,7 @@ export const App: React.FC = () => {
                       onNextChannel={handleNextChannel}
                       isFavorite={activeChannel ? favorites.includes(activeChannel.id) : false}
                       onToggleFavorite={() => activeChannel && toggleFavorite(activeChannel)}
+                      onTogglePiP={() => setIsFloatingPiP(!isFloatingPiP)}
                     />
 
                     {activeChannel && (
@@ -693,6 +753,28 @@ export const App: React.FC = () => {
         onClose={() => setIsPlaylistModalOpen(false)}
         currentCountry={currentCountry}
       />
+
+      {/* Floating Picture-in-Picture Player Widget */}
+      {isFloatingPiP && activeChannel && view !== 'player' && (
+        <div className="fixed bottom-6 right-6 z-[200] w-72 sm:w-80 aspect-video rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.9)] border-2 border-amber-500 bg-black overflow-hidden animate-in fade-in slide-in-from-bottom-4 group">
+          <VideoPlayer
+            channel={activeChannel}
+            onPrevChannel={handlePrevChannel}
+            onNextChannel={handleNextChannel}
+            isFavorite={favorites.includes(activeChannel.id)}
+            onToggleFavorite={() => toggleFavorite(activeChannel)}
+            onTogglePiP={() => setIsFloatingPiP(false)}
+            isFloatingPiP={true}
+          />
+          <button
+            onClick={() => setIsFloatingPiP(false)}
+            className="absolute top-2 right-2 z-50 bg-slate-900/80 hover:bg-red-600 text-white rounded-full p-1.5 transition-colors shadow-lg text-xs font-bold leading-none"
+            title="Close PiP"
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   );
 };

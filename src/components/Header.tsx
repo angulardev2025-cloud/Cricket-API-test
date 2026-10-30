@@ -171,63 +171,70 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         </div>
 
-        {/* Central Search Bar */}
-        <div className="w-full md:max-w-md relative">
-          <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Search 14,500+ channels..."
-              className="w-full bg-slate-900 text-slate-100 placeholder-slate-400 text-xs sm:text-sm rounded-xl pl-10 pr-20 py-2.5 border border-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all shadow-inner"
-            />
-            {isSearching ? (
-               <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-500 animate-spin" />
-            ) : searchQuery ? (
-              <button
-                onClick={() => onSearchChange('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400 hover:text-white bg-slate-800 px-2 py-0.5 rounded"
-              >
-                Clear
-              </button>
-            ) : (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono text-slate-500 bg-slate-800/80 px-1.5 py-0.5 rounded border border-slate-700 hidden sm:inline">
-                {filteredCount} found
-              </span>
+        {/* Central Search Bar (Hidden on Radio view to prevent global results) */}
+        {view !== 'radio' ? (
+          <div className="w-full md:max-w-md relative">
+            <div className="relative">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                placeholder="Search 14,500+ channels..."
+                className="w-full bg-slate-900 text-slate-100 placeholder-slate-400 text-xs sm:text-sm rounded-xl pl-10 pr-20 py-2.5 border border-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all shadow-inner"
+              />
+              {isSearching ? (
+                 <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-500 animate-spin" />
+              ) : searchQuery ? (
+                <button
+                  onClick={() => onSearchChange('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400 hover:text-white bg-slate-800 px-2 py-0.5 rounded"
+                >
+                  Clear
+                </button>
+              ) : (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono text-slate-500 bg-slate-800/80 px-1.5 py-0.5 rounded border border-slate-700 hidden sm:inline">
+                  {filteredCount} found
+                </span>
+              )}
+            </div>
+
+            {/* Suggestions Dropdown */}
+            {suggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-1">
+                 <div className="p-2 border-b border-slate-800 bg-slate-950/50 flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Global Results</span>
+                 </div>
+                 {suggestions.map((item, idx) => (
+                    <button
+                      key={`${item.i}-${idx}`}
+                      onClick={() => handleSelectSuggestion(item.c, item.i)}
+                      className="w-full flex items-center justify-between p-2.5 hover:bg-amber-500/10 transition-colors group text-left border-b border-slate-800/50 last:border-0"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="h-8 w-8 rounded-lg bg-slate-800 flex items-center justify-center text-[10px] font-bold text-amber-500 shrink-0 group-hover:bg-amber-500 group-hover:text-black transition-colors">
+                          {item.n.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="truncate">
+                          <p className="text-xs font-bold text-white group-hover:text-amber-400 transition-colors truncate">{item.n}</p>
+                          <p className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5">
+                            <span>{item.f}</span>
+                            <span className="uppercase font-medium">{item.c}</span>
+                          </p>
+                        </div>
+                      </div>
+                      <Play className="h-3.5 w-3.5 text-amber-500 opacity-0 group-hover:opacity-100 transition-all transform translate-x-1 group-hover:translate-x-0" />
+                    </button>
+                 ))}
+              </div>
             )}
           </div>
-
-          {/* Suggestions Dropdown */}
-          {suggestions.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-1">
-               <div className="p-2 border-b border-slate-800 bg-slate-950/50 flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Global Results</span>
-               </div>
-               {suggestions.map((item, idx) => (
-                  <button
-                    key={`${item.i}-${idx}`}
-                    onClick={() => handleSelectSuggestion(item.c, item.i)}
-                    className="w-full flex items-center justify-between p-2.5 hover:bg-amber-500/10 transition-colors group text-left border-b border-slate-800/50 last:border-0"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="h-8 w-8 rounded-lg bg-slate-800 flex items-center justify-center text-[10px] font-bold text-amber-500 shrink-0 group-hover:bg-amber-500 group-hover:text-black transition-colors">
-                        {item.n.slice(0, 2).toUpperCase()}
-                      </div>
-                      <div className="truncate">
-                        <p className="text-xs font-bold text-white group-hover:text-amber-400 transition-colors truncate">{item.n}</p>
-                        <p className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5">
-                          <span>{item.f}</span>
-                          <span className="uppercase font-medium">{item.c}</span>
-                        </p>
-                      </div>
-                    </div>
-                    <Play className="h-3.5 w-3.5 text-amber-500 opacity-0 group-hover:opacity-100 transition-all transform translate-x-1 group-hover:translate-x-0" />
-                  </button>
-               ))}
-            </div>
-          )}
-        </div>
+        ) : (
+          <div className="flex items-center gap-2 bg-indigo-950/80 border border-indigo-500/30 px-4 py-2 rounded-xl text-xs font-bold text-fuchsia-300 shadow-inner">
+             <Radio className="h-4 w-4 animate-pulse text-fuchsia-400" />
+             <span>Radio Mode active • Use dedicated radio search below</span>
+          </div>
+        )}
 
       </div>
     </header>

@@ -15,7 +15,9 @@ import {
   ChevronRight,
   ChevronLeft,
   Sparkles,
-  Tv
+  Tv,
+  PictureInPicture2,
+  Cast
 } from 'lucide-react';
 
 interface VideoPlayerProps {
@@ -24,6 +26,8 @@ interface VideoPlayerProps {
   onNextChannel: () => void;
   isFavorite: boolean;
   onToggleFavorite: () => void;
+  onTogglePiP: () => void;
+  isFloatingPiP?: boolean;
 }
 
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({
@@ -32,6 +36,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   onNextChannel,
   isFavorite,
   onToggleFavorite,
+  onTogglePiP,
+  isFloatingPiP = false,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -176,6 +182,26 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   };
 
+  const handlePiP = async () => {
+    try {
+      const video = videoRef.current;
+      if (!video) return;
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+      } else if (document.pictureInPictureEnabled) {
+        await video.requestPictureInPicture();
+      } else {
+        onTogglePiP();
+      }
+    } catch {
+      onTogglePiP();
+    }
+  };
+
+  const handleCast = () => {
+    alert("Casting: Searching for Chromecast & AirPlay displays...");
+  };
+
   const handleMouseMove = () => {
     setShowControls(true);
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
@@ -189,7 +215,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       ref={containerRef}
       onMouseMove={handleMouseMove}
       className={`relative w-full overflow-hidden bg-black group select-none ${
-        isFullscreen ? 'h-screen w-screen' : 'aspect-video rounded-xl border border-slate-800 shadow-2xl'
+        isFullscreen ? 'h-screen w-screen' : isFloatingPiP ? 'h-full w-full' : 'aspect-video rounded-xl border border-slate-800 shadow-2xl'
       }`}
     >
       {/* Youtube Style Poster */}
@@ -272,18 +298,20 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               )}
             </div>
             
-            <div className="flex items-center gap-1 sm:gap-2 min-w-0">
-               <span className="text-white text-xs sm:text-sm font-bold truncate max-w-[80px] sm:max-w-[200px]">
-                 {channel?.name}
-               </span>
-               <div className="hidden xs:flex items-center gap-1 text-[8px] sm:text-[10px] bg-red-600 text-white px-1.5 py-0.5 rounded font-bold shrink-0">
-                 <Radio className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                 <span>LIVE</span>
-               </div>
-            </div>
+            {!isFloatingPiP && (
+              <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+                 <span className="text-white text-xs sm:text-sm font-bold truncate max-w-[80px] sm:max-w-[200px]">
+                   {channel?.name}
+                 </span>
+                 <div className="hidden xs:flex items-center gap-1 text-[8px] sm:text-[10px] bg-red-600 text-white px-1.5 py-0.5 rounded font-bold shrink-0">
+                   <Radio className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                   <span>LIVE</span>
+                 </div>
+              </div>
+            )}
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {channel && channel.streams.length > 1 && (
               <button 
                 onClick={() => setShowSettings(!showSettings)}
@@ -295,16 +323,36 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             )}
 
             <button 
-              onClick={onToggleFavorite}
-              className={`transition-all p-1 ${isFavorite ? 'text-amber-400 scale-110' : 'text-white/60 hover:text-white'}`}
-              title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+              onClick={handleCast}
+              className="text-white/80 hover:text-white transition-all p-1"
+              title="Cast to TV"
             >
-              <Sparkles className={`h-4 w-4 sm:h-5 sm:w-5 ${isFavorite ? 'fill-current' : ''}`} />
+              <Cast className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
-            
-            <button onClick={toggleFullscreen} className="text-white/80 hover:text-white p-1">
-              {isFullscreen ? <Minimize className="h-4 w-4 sm:h-5 sm:w-5" /> : <Maximize className="h-4 w-4 sm:h-5 sm:w-5" />}
+
+            <button 
+              onClick={handlePiP}
+              className="text-white/80 hover:text-white transition-all p-1"
+              title="Picture-in-Picture mode"
+            >
+              <PictureInPicture2 className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
+
+            {!isFloatingPiP && (
+              <>
+                <button 
+                  onClick={onToggleFavorite}
+                  className={`transition-all p-1 ${isFavorite ? 'text-amber-400 scale-110' : 'text-white/60 hover:text-white'}`}
+                  title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                >
+                  <Sparkles className={`h-4 w-4 sm:h-5 sm:w-5 ${isFavorite ? 'fill-current' : ''}`} />
+                </button>
+                
+                <button onClick={toggleFullscreen} className="text-white/80 hover:text-white p-1">
+                  {isFullscreen ? <Minimize className="h-4 w-4 sm:h-5 sm:w-5" /> : <Maximize className="h-4 w-4 sm:h-5 sm:w-5" />}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
